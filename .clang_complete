@@ -1,0 +1,17 @@
+-I/Users/zhiayang/Desktop/Stuff/Code/instrad/source/include
+-I/usr/local/include
+-std=c++17
+-ferror-limit=0
+-Wall
+-Wno-trigraphs
+-Wno-c++1z-extensions
+-Wno-ignored-attributes
+-Wno-nullability-completeness
+-Wno-expansion-to-defined
+-Wno-old-style-cast
+-Wno-unused-function
+-I/Library/Developer/CommandLineTools/usr/include/
+-I/Library/Developer/CommandLineTools/usr/include/c++/v1/
+-I/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include/
+-I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/
+-F/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/
