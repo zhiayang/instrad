@@ -952,10 +952,11 @@ namespace instrad::x64
 		entry_1(0x1E, ops::NOP, true, OperandKind::RegMem32),
 		entry_1(0x1F, ops::NOP, true, OperandKind::RegMem32),
 
-		entry_2(0x20, ops::MOV, true, OperandKind::Reg64, OperandKind::ControlReg),
-		entry_2(0x21, ops::MOV, true, OperandKind::Reg64, OperandKind::DebugReg),
-		entry_2(0x22, ops::MOV, true, OperandKind::ControlReg, OperandKind::Reg64),
-		entry_2(0x23, ops::MOV, true, OperandKind::DebugReg, OperandKind::Reg64),
+		// the non-special register is encoded in the rm bits, so use RegMem64 even though it's not really mem.
+		entry_2(0x20, ops::MOV, true, OperandKind::RegMem64, OperandKind::ControlReg),
+		entry_2(0x21, ops::MOV, true, OperandKind::RegMem64, OperandKind::DebugReg),
+		entry_2(0x22, ops::MOV, true, OperandKind::ControlReg, OperandKind::RegMem64),
+		entry_2(0x23, ops::MOV, true, OperandKind::DebugReg, OperandKind::RegMem64),
 		entry_none(0x24),
 		entry_none(0x25),
 		entry_none(0x26),
@@ -1396,11 +1397,10 @@ namespace instrad::x64
 	};
 
 	static_assert(ArrayLength(SecondaryOpcodeMap_F0_Normal) == 256, "table invalid");
-	static_assert(ArrayLength(SecondaryOpcodeMap_F0_Prefix_None) == 256, "table invalid");
 	static_assert(ArrayLength(SecondaryOpcodeMap_F0_Prefix_66) == 256, "table invalid");
 	static_assert(ArrayLength(SecondaryOpcodeMap_F0_Prefix_F2) == 256, "table invalid");
 	static_assert(ArrayLength(SecondaryOpcodeMap_F0_Prefix_F3) == 256, "table invalid");
-
+	static_assert(ArrayLength(SecondaryOpcodeMap_F0_Prefix_None) == 256, "table invalid");
 
 	static_assert(ArrayLength(ModRMExt_0F_00) == 8, "table invalid");
 	static_assert(ArrayLength(ModRMExt_0F_01) == 8, "table invalid");

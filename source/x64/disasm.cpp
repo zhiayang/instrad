@@ -9,6 +9,21 @@
 
 namespace instrad::x64
 {
+	Register getSegmentOfOverride(int override)
+	{
+		switch(override)
+		{
+			case InstrModifiers::SEG_CS: return regs::CS;
+			case InstrModifiers::SEG_DS: return regs::DS;
+			case InstrModifiers::SEG_ES: return regs::ES;
+			case InstrModifiers::SEG_FS: return regs::FS;
+			case InstrModifiers::SEG_GS: return regs::GS;
+			case InstrModifiers::SEG_SS: return regs::SS;
+
+			default: return regs::NONE;
+		}
+	}
+
 	Operand getOperand(Buffer& buf, OperandKind kind, InstrModifiers& mods)
 	{
 		switch(kind)
@@ -81,6 +96,9 @@ namespace instrad::x64
 					return readSignedImm32(buf);
 			}
 
+			case OperandKind::Memory:
+				return getMemoryFromModRM(buf, /* byte: */ false, mods);
+
 			case OperandKind::ImplicitCS:   return regs::CS;
 			case OperandKind::ImplicitDS:   return regs::DS;
 			case OperandKind::ImplicitES:   return regs::ES;
@@ -91,24 +109,46 @@ namespace instrad::x64
 			case OperandKind::ImplicitCX:   return regs::CX;
 			case OperandKind::ImplicitECX:  return regs::ECX;
 			case OperandKind::ImplicitDX:   return regs::DX;
+
 			case OperandKind::ImplicitAL:   return regs::AL;
-			case OperandKind::ImplicitAX:   return regs::AX;
-			case OperandKind::ImplicitEAX:  return regs::EAX;
-			case OperandKind::ImplicitRAX:  return regs::RAX;
 
-			case OperandKind::Memory:
-				return getMemoryFromModRM(buf, /* byte: */ false, mods);
+			case OperandKind::ImplicitAX:
+			case OperandKind::ImplicitEAX:
+			case OperandKind::ImplicitRAX: {
+				if(mods.operandSizeOverride)
+					return regs::AX;
+				else if(mods.rex.W)
+					return regs::RAX;
+				else
+					return regs::EAX;
+			}
 
-			case OperandKind::SegmentReg:
-			case OperandKind::ControlReg:
-			case OperandKind::DebugReg:
+
+			case OperandKind::SegmentReg:   return getSegmentRegister(mods);
+			case OperandKind::ControlReg:   return getControlRegister(mods);
+			case OperandKind::DebugReg:     return getDebugRegister(mods);
+
 			case OperandKind::MemoryOfs8:
 			case OperandKind::MemoryOfs16:
 			case OperandKind::MemoryOfs32:
-			case OperandKind::MemoryOfs64:
+			case OperandKind::MemoryOfs64: {
+				// kekw
+				int bits = 8 * (1 << ((int) kind - (int) OperandKind::MemoryOfs8));
+
+				auto seg = getSegmentOfOverride(mods.segmentOverride);
+				if(mods.legacyAddressingMode)
+					return MemoryRef(bits, (uint32_t) readSignedImm32(buf)).setSegment(seg);
+
+				else
+					return MemoryRef(bits, (uint64_t) readSignedImm64(buf)).setSegment(seg);
+			}
+
+
+
 			case OperandKind::Ptr16_16:
 			case OperandKind::Ptr16_32:
 				// not supported
+				printf("unsupported operand!\n");
 				return regs::R15;
 
 			case OperandKind::None:
@@ -267,6 +307,11 @@ namespace instrad::x64
 		auto len = xs.ptr() - begin;
 
 		ret.setBytes(begin, len);
+
+		if(modifiers.lockPrefix)    ret.addLockPrefix();
+		if(modifiers.repPrefix)     ret.addRepPrefix();
+		if(modifiers.repnzPrefix)   ret.addRepNZPrefix();
+
 		return ret;
 	}
 }

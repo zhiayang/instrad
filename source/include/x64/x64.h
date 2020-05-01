@@ -22,26 +22,33 @@ namespace instrad::x64
 	{
 		constexpr MemoryRef() { }
 
-		constexpr explicit MemoryRef(int64_t d) : m_displacement(d) { }
-		constexpr explicit MemoryRef(const Register& b) : m_base(b) { }
+		constexpr explicit MemoryRef(int bits, int64_t d) : m_bits(bits), m_displacement(d) { }
+		constexpr explicit MemoryRef(int bits, const Register& b) : m_bits(bits), m_base(b) { }
 
-		constexpr MemoryRef(const Register& b, int64_t d) : m_displacement(d), m_base(b) { }
-		constexpr MemoryRef(const Register& b, const Register& i) : m_base(b), m_index(i) { }
+		constexpr MemoryRef(int bits, const Register& b, int64_t d) : m_bits(bits), m_displacement(d), m_base(b) { }
+		constexpr MemoryRef(int bits, const Register& b, const Register& i) : m_bits(bits), m_base(b), m_index(i) { }
 
-		constexpr MemoryRef(const Register& b, const Register& i, int s, int64_t d)
-			: m_scale(s), m_displacement(d), m_base(b), m_index(i) { }
+		constexpr MemoryRef(int bits, const Register& b, const Register& i, int s, int64_t d)
+			: m_bits(bits), m_scale(s), m_displacement(d), m_base(b), m_index(i) { }
 
+		constexpr int bits() const { return this->m_bits; }
 		constexpr int scale() const { return this->m_scale; }
+		constexpr const Register& segment() const { return this->m_segment; }
 		constexpr int64_t displacement() const { return this->m_displacement; }
 		constexpr const Register& base() const { return this->m_base; }
 		constexpr const Register& index() const { return this->m_index; }
 
-		constexpr void setScale(int s) { this->m_scale = s; }
-		constexpr void setDisplacement(int64_t d) { this->m_displacement = d; }
-		constexpr void setIndex(const Register& i) { this->m_index = i; }
-		constexpr void setBase(const Register& b) { this->m_base = b; }
+		constexpr MemoryRef& setBits(int b) { this->m_bits = b; return *this; }
+		constexpr MemoryRef& setScale(int s) { this->m_scale = s; return *this; }
+		constexpr MemoryRef& setDisplacement(int64_t d) { this->m_displacement = d; return *this; }
+		constexpr MemoryRef& setIndex(const Register& i) { this->m_index = i; return *this; }
+		constexpr MemoryRef& setBase(const Register& b) { this->m_base = b; return *this; }
+		constexpr MemoryRef& setSegment(const Register& b) { this->m_segment = b; return *this; }
 
 	private:
+		int m_bits = 0;
+		Register m_segment = regs::NONE;
+
 		// base + (index * scale) + displacement
 
 		int m_scale = 1;
@@ -95,6 +102,15 @@ namespace instrad::x64
 		constexpr void setExt(const Operand& x) { this->m_ext = x; this->m_operandCount = 3; }
 		constexpr void setBytes(const uint8_t* bytes, size_t n) { this->m_bytes = bytes; this->m_byteCount = n; }
 
+		constexpr void addLockPrefix() { this->m_prefixLock = true; }
+		constexpr void addRepPrefix() { this->m_prefixRep = true; }
+		constexpr void addRepNZPrefix() { this->m_prefixRepnz = true; }
+
+		constexpr bool lockPrefix() const { return this->m_prefixLock; }
+		constexpr bool repPrefix() const { return this->m_prefixRep; }
+		constexpr bool repnzPrefix() const { return this->m_prefixRepnz; }
+
+
 		constexpr const Operand& src() const { return this->m_src; }
 		constexpr const Operand& dst() const { return this->m_dst; }
 		constexpr const Operand& ext() const { return this->m_ext; }
@@ -107,8 +123,11 @@ namespace instrad::x64
 
 	private:
 		Op m_op;
-
 		int m_operandCount = 0;
+
+		bool m_prefixLock  = false;
+		bool m_prefixRep   = false;
+		bool m_prefixRepnz = false;
 
 		// in "mov rax, $1", rax=dst, $1=src; ie. "mov $1, %rax"
 		// for single-op instructions, eg. inc %rax, it is stored in dst.
@@ -350,6 +369,68 @@ namespace instrad::x64
 		return mem;
 	}
 
+	constexpr Register getSegmentRegister(const InstrModifiers& mods)
+	{
+		switch(mods.modrm.reg)
+		{
+			case 0:     return regs::ES;
+			case 1:     return regs::CS;
+			case 2:     return regs::SS;
+			case 3:     return regs::DS;
+			case 4:     return regs::FS;
+			case 5:     return regs::GS;
+			default:    return regs::INVALID;
+		}
+	}
+
+	constexpr Register getControlRegister(const InstrModifiers& mods)
+	{
+		switch(mods.modrm.reg | (mods.rex.R << 3))
+		{
+			case 0:     return regs::CR0;
+			case 1:     return regs::CR1;
+			case 2:     return regs::CR2;
+			case 3:     return regs::CR3;
+			case 4:     return regs::CR4;
+			case 5:     return regs::CR5;
+			case 6:     return regs::CR6;
+			case 7:     return regs::CR7;
+			case 8:     return regs::CR8;
+			case 9:     return regs::CR9;
+			case 10:    return regs::CR10;
+			case 11:    return regs::CR11;
+			case 12:    return regs::CR12;
+			case 13:    return regs::CR13;
+			case 14:    return regs::CR14;
+			case 15:    return regs::CR15;
+			default:    return regs::INVALID;
+		}
+	}
+
+	constexpr Register getDebugRegister(const InstrModifiers& mods)
+	{
+		switch(mods.modrm.reg | (mods.rex.R << 3))
+		{
+			case 0:     return regs::DR0;
+			case 1:     return regs::DR1;
+			case 2:     return regs::DR2;
+			case 3:     return regs::DR3;
+			case 4:     return regs::DR4;
+			case 5:     return regs::DR5;
+			case 6:     return regs::DR6;
+			case 7:     return regs::DR7;
+			case 8:     return regs::DR8;
+			case 9:     return regs::DR9;
+			case 10:    return regs::DR10;
+			case 11:    return regs::DR11;
+			case 12:    return regs::DR12;
+			case 13:    return regs::DR13;
+			case 14:    return regs::DR14;
+			case 15:    return regs::DR15;
+			default:    return regs::INVALID;
+		}
+	}
+
 	constexpr Register decodeRegisterNumber(bool isByteMode, const InstrModifiers& mods, int index)
 	{
 		if(isByteMode)
@@ -477,7 +558,7 @@ namespace instrad::x64
 
 		if(mods.directRegisterIndex)
 		{
-			return decodeRegisterNumber(isByteMode, mods, (mods.opcode & 0x07) | (mods.rex.R << 3));
+			return decodeRegisterNumber(isByteMode, mods, (mods.opcode & 0x07) | (mods.rex.B << 3));
 		}
 		else
 		{
@@ -487,111 +568,139 @@ namespace instrad::x64
 
 	constexpr MemoryRef getMemoryFromModRM(Buffer& buf, bool isByteMode, const InstrModifiers& mods)
 	{
-		if(mods.modrm.mod == 0)
-		{
-			// if 16-bit addressing:
-			if(mods.legacyAddressingMode && mods.addressSizeOverride)
-			{
-				switch(mods.modrm.rm)
-				{
-					case 0: return MemoryRef(regs::BX, regs::SI);
-					case 1: return MemoryRef(regs::BX, regs::DI);
-					case 2: return MemoryRef(regs::BP, regs::SI);
-					case 3: return MemoryRef(regs::BP, regs::DI);
-					case 4: return MemoryRef(regs::SI);
-					case 5: return MemoryRef(regs::DI);
-					case 6: return MemoryRef(readSignedImm16(buf));
-					case 7: return MemoryRef(regs::BX);
-				}
-			}
-			else
-			{
-				// 32/64 bit addressing. we test REX.B inline here.
-				switch(mods.modrm.rm)
-				{
-					case 0:  return MemoryRef(mods.rex.B ? regs::R8  : regs::RAX);
-					case 1:  return MemoryRef(mods.rex.B ? regs::R9  : regs::RCX);
-					case 2:  return MemoryRef(mods.rex.B ? regs::R10 : regs::RDX);
-					case 3:  return MemoryRef(mods.rex.B ? regs::R11 : regs::RBX);
-					case 4:  return decodeSIB(buf, mods);
+		int bits = (
+			isByteMode
+				? 8
+				: mods.operandSizeOverride
+					? 16
+					: mods.rex.W
+						? 64
+						: 32
+		);
 
-					// in 64-bit mode, this becomes rip-relative addressing. if not, it is just disp32.
-					case 5:  return mods.rex.present()  ? MemoryRef(regs::RIP, readSignedImm32(buf))
-														: MemoryRef(readSignedImm32(buf));
+		// lazy to refactor this, so just wrap it in a lambda so we can extract the return value
 
-					case 6:  return MemoryRef(mods.rex.B ? regs::R14 : regs::RSI);
-					case 7:  return MemoryRef(mods.rex.B ? regs::R15 : regs::RDI);
-				}
-			}
-		}
-		else if(mods.modrm.mod == 1)
-		{
-			// if 16-bit addressing:
-			if(mods.legacyAddressingMode && mods.addressSizeOverride)
+		auto wrapper = [&]() -> auto {
+			if(mods.modrm.mod == 0)
 			{
-				switch(mods.modrm.rm)
+				// if 16-bit addressing:
+				if(mods.legacyAddressingMode && mods.addressSizeOverride)
 				{
-					case 0: return MemoryRef(regs::BX, regs::SI, 0, readSignedImm8(buf));
-					case 1: return MemoryRef(regs::BX, regs::DI, 0, readSignedImm8(buf));
-					case 2: return MemoryRef(regs::BP, regs::SI, 0, readSignedImm8(buf));
-					case 3: return MemoryRef(regs::BP, regs::DI, 0, readSignedImm8(buf));
-					case 4: return MemoryRef(regs::SI, readSignedImm8(buf));
-					case 5: return MemoryRef(regs::DI, readSignedImm8(buf));
-					case 6: return MemoryRef(regs::BP, readSignedImm8(buf));
-					case 7: return MemoryRef(regs::BX, readSignedImm8(buf));
+					switch(mods.modrm.rm)
+					{
+						case 0: return MemoryRef(bits, regs::BX, regs::SI);
+						case 1: return MemoryRef(bits, regs::BX, regs::DI);
+						case 2: return MemoryRef(bits, regs::BP, regs::SI);
+						case 3: return MemoryRef(bits, regs::BP, regs::DI);
+						case 4: return MemoryRef(bits, regs::SI);
+						case 5: return MemoryRef(bits, regs::DI);
+						case 6: return MemoryRef(bits, readSignedImm16(buf));
+						case 7: return MemoryRef(bits, regs::BX);
+					}
 				}
-			}
-			else
-			{
-				// 32/64 bit addressing
-				switch(mods.modrm.rm)
+				else
 				{
-					case 0:  return MemoryRef(mods.rex.B ? regs::R8  : regs::RAX, readSignedImm8(buf));
-					case 1:  return MemoryRef(mods.rex.B ? regs::R9  : regs::RCX, readSignedImm8(buf));
-					case 2:  return MemoryRef(mods.rex.B ? regs::R10 : regs::RDX, readSignedImm8(buf));
-					case 3:  return MemoryRef(mods.rex.B ? regs::R11 : regs::RBX, readSignedImm8(buf));
-					case 4:  return decodeSIB(buf, mods);
-					case 5:  return MemoryRef(mods.rex.B ? regs::R13 : regs::RBP, readSignedImm8(buf));
-					case 6:  return MemoryRef(mods.rex.B ? regs::R14 : regs::RSI, readSignedImm8(buf));
-					case 7:  return MemoryRef(mods.rex.B ? regs::R15 : regs::RDI, readSignedImm8(buf));
-				}
-			}
-		}
-		else if(mods.modrm.mod == 2)
-		{
-			// if 16-bit addressing:
-			if(mods.legacyAddressingMode && mods.addressSizeOverride)
-			{
-				switch(mods.modrm.rm)
-				{
-					case 0: return MemoryRef(regs::BX, regs::SI, 0, readSignedImm16(buf));
-					case 1: return MemoryRef(regs::BX, regs::DI, 0, readSignedImm16(buf));
-					case 2: return MemoryRef(regs::BP, regs::SI, 0, readSignedImm16(buf));
-					case 3: return MemoryRef(regs::BP, regs::DI, 0, readSignedImm16(buf));
-					case 4: return MemoryRef(regs::SI, readSignedImm16(buf));
-					case 5: return MemoryRef(regs::DI, readSignedImm16(buf));
-					case 6: return MemoryRef(regs::BP, readSignedImm16(buf));
-					case 7: return MemoryRef(regs::BX, readSignedImm16(buf));
-				}
-			}
-			else
-			{
-				// 32/64 bit addressing
-				switch(mods.modrm.rm)
-				{
-					case 0:  return MemoryRef(mods.rex.B ? regs::R8  : regs::RAX, readSignedImm32(buf));
-					case 1:  return MemoryRef(mods.rex.B ? regs::R9  : regs::RCX, readSignedImm32(buf));
-					case 2:  return MemoryRef(mods.rex.B ? regs::R10 : regs::RDX, readSignedImm32(buf));
-					case 3:  return MemoryRef(mods.rex.B ? regs::R11 : regs::RBX, readSignedImm32(buf));
-					case 4:  return decodeSIB(buf, mods);
-					case 5:  return MemoryRef(mods.rex.B ? regs::R13 : regs::RBP, readSignedImm32(buf));
-					case 6:  return MemoryRef(mods.rex.B ? regs::R14 : regs::RSI, readSignedImm32(buf));
-					case 7:  return MemoryRef(mods.rex.B ? regs::R15 : regs::RDI, readSignedImm32(buf));
-				}
-			}
-		}
+					// 32/64 bit addressing. we test REX.B inline here.
+					switch(mods.modrm.rm)
+					{
+						case 0:  return MemoryRef(bits, mods.rex.B ? regs::R8  : regs::RAX);
+						case 1:  return MemoryRef(bits, mods.rex.B ? regs::R9  : regs::RCX);
+						case 2:  return MemoryRef(bits, mods.rex.B ? regs::R10 : regs::RDX);
+						case 3:  return MemoryRef(bits, mods.rex.B ? regs::R11 : regs::RBX);
+						case 4:  return decodeSIB(buf, mods).setBits(bits);
 
-		return MemoryRef();
+						// in 64-bit mode, this becomes rip-relative addressing. if not, it is just disp32.
+						case 5:  return mods.rex.present()  ? MemoryRef(bits, regs::RIP, readSignedImm32(buf))
+															: MemoryRef(bits, readSignedImm32(buf));
+
+						case 6:  return MemoryRef(bits, mods.rex.B ? regs::R14 : regs::RSI);
+						case 7:  return MemoryRef(bits, mods.rex.B ? regs::R15 : regs::RDI);
+					}
+				}
+			}
+			else if(mods.modrm.mod == 1)
+			{
+				// if 16-bit addressing:
+				if(mods.legacyAddressingMode && mods.addressSizeOverride)
+				{
+					switch(mods.modrm.rm)
+					{
+						case 0: return MemoryRef(bits, regs::BX, regs::SI, 0, readSignedImm8(buf));
+						case 1: return MemoryRef(bits, regs::BX, regs::DI, 0, readSignedImm8(buf));
+						case 2: return MemoryRef(bits, regs::BP, regs::SI, 0, readSignedImm8(buf));
+						case 3: return MemoryRef(bits, regs::BP, regs::DI, 0, readSignedImm8(buf));
+						case 4: return MemoryRef(bits, regs::SI, readSignedImm8(buf));
+						case 5: return MemoryRef(bits, regs::DI, readSignedImm8(buf));
+						case 6: return MemoryRef(bits, regs::BP, readSignedImm8(buf));
+						case 7: return MemoryRef(bits, regs::BX, readSignedImm8(buf));
+					}
+				}
+				else
+				{
+					// 32/64 bit addressing
+					switch(mods.modrm.rm)
+					{
+						case 0:  return MemoryRef(bits, mods.rex.B ? regs::R8  : regs::RAX, readSignedImm8(buf));
+						case 1:  return MemoryRef(bits, mods.rex.B ? regs::R9  : regs::RCX, readSignedImm8(buf));
+						case 2:  return MemoryRef(bits, mods.rex.B ? regs::R10 : regs::RDX, readSignedImm8(buf));
+						case 3:  return MemoryRef(bits, mods.rex.B ? regs::R11 : regs::RBX, readSignedImm8(buf));
+						case 4:  return decodeSIB(buf, mods).setBits(bits).setDisplacement(readSignedImm8(buf));
+						case 5:  return MemoryRef(bits, mods.rex.B ? regs::R13 : regs::RBP, readSignedImm8(buf));
+						case 6:  return MemoryRef(bits, mods.rex.B ? regs::R14 : regs::RSI, readSignedImm8(buf));
+						case 7:  return MemoryRef(bits, mods.rex.B ? regs::R15 : regs::RDI, readSignedImm8(buf));
+					}
+				}
+			}
+			else if(mods.modrm.mod == 2)
+			{
+				// if 16-bit addressing:
+				if(mods.legacyAddressingMode && mods.addressSizeOverride)
+				{
+					switch(mods.modrm.rm)
+					{
+						case 0: return MemoryRef(bits, regs::BX, regs::SI, 0, readSignedImm16(buf));
+						case 1: return MemoryRef(bits, regs::BX, regs::DI, 0, readSignedImm16(buf));
+						case 2: return MemoryRef(bits, regs::BP, regs::SI, 0, readSignedImm16(buf));
+						case 3: return MemoryRef(bits, regs::BP, regs::DI, 0, readSignedImm16(buf));
+						case 4: return MemoryRef(bits, regs::SI, readSignedImm16(buf));
+						case 5: return MemoryRef(bits, regs::DI, readSignedImm16(buf));
+						case 6: return MemoryRef(bits, regs::BP, readSignedImm16(buf));
+						case 7: return MemoryRef(bits, regs::BX, readSignedImm16(buf));
+					}
+				}
+				else
+				{
+					// 32/64 bit addressing
+					switch(mods.modrm.rm)
+					{
+						case 0:  return MemoryRef(bits, mods.rex.B ? regs::R8  : regs::RAX, readSignedImm32(buf));
+						case 1:  return MemoryRef(bits, mods.rex.B ? regs::R9  : regs::RCX, readSignedImm32(buf));
+						case 2:  return MemoryRef(bits, mods.rex.B ? regs::R10 : regs::RDX, readSignedImm32(buf));
+						case 3:  return MemoryRef(bits, mods.rex.B ? regs::R11 : regs::RBX, readSignedImm32(buf));
+						case 4:  return decodeSIB(buf, mods).setBits(bits).setDisplacement(readSignedImm32(buf));
+						case 5:  return MemoryRef(bits, mods.rex.B ? regs::R13 : regs::RBP, readSignedImm32(buf));
+						case 6:  return MemoryRef(bits, mods.rex.B ? regs::R14 : regs::RSI, readSignedImm32(buf));
+						case 7:  return MemoryRef(bits, mods.rex.B ? regs::R15 : regs::RDI, readSignedImm32(buf));
+					}
+				}
+			}
+
+			return MemoryRef();
+		};
+
+		auto ret = wrapper();
+		switch(mods.segmentOverride)
+		{
+			case InstrModifiers::SEG_CS: return ret.setSegment(regs::CS);
+			case InstrModifiers::SEG_DS: return ret.setSegment(regs::DS);
+			case InstrModifiers::SEG_ES: return ret.setSegment(regs::ES);
+			case InstrModifiers::SEG_FS: return ret.setSegment(regs::FS);
+			case InstrModifiers::SEG_GS: return ret.setSegment(regs::GS);
+			case InstrModifiers::SEG_SS: return ret.setSegment(regs::SS);
+
+			default:
+				return ret;
+		}
 	}
 
 	constexpr Operand getRegisterOrMemoryFromModRM(Buffer& buf, bool isByteMode, const InstrModifiers& mods)

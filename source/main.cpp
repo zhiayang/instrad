@@ -37,11 +37,15 @@ std::string print_intel(const instrad::x64::Instruction& instr)
 			auto& base = mem.base();
 			auto& idx = mem.index();
 
+			std::string segment = "";
+			if(mem.segment().present())
+				segment = zpr::sprint("%s:", mem.segment().name());
+
 			// you can't scale a displacement, so we're fine here.
 			if(!base.present() && !idx.present())
-				return zpr::sprint("[%#x]", mem.displacement());
+				return segment + zpr::sprint("[%#x]", mem.displacement());
 
-			std::string tmp = "[";
+			std::string tmp = segment + "[";
 			if(base.present())
 			{
 				tmp += zpr::sprint("%s", base.name());
@@ -82,14 +86,19 @@ std::string print_intel(const instrad::x64::Instruction& instr)
 	while(col++ < 40)
 		margin += zpr::sprint(" ");
 
+	std::string prefix = "";
+	if(instr.lockPrefix())  prefix = "lock ";
+	if(instr.repPrefix())   prefix = "rep ";
+	if(instr.repnzPrefix()) prefix = "repnz ";
+
 	if(instr.operandCount() == 0)
-		return margin + std::string(instr.op().mnemonic());
+		return margin + prefix + std::string(instr.op().mnemonic());
 
 	else if(instr.operandCount() == 1)
-		return margin + zpr::sprint("%s %s", instr.op().mnemonic(), print_operand(instr.dst()));
+		return margin + prefix + zpr::sprint("%s %s", instr.op().mnemonic(), print_operand(instr.dst()));
 
 	else
-		return margin + zpr::sprint("%s %s, %s", instr.op().mnemonic(), print_operand(instr.dst()), print_operand(instr.src()));
+		return margin + prefix + zpr::sprint("%s %s, %s", instr.op().mnemonic(), print_operand(instr.dst()), print_operand(instr.src()));
 }
 
 
@@ -116,24 +125,23 @@ int main(int argc, char** argv)
 	size_t length = file.tellg();
 	file.seekg(0, std::ios::beg);
 
-	length = std::min(length, (size_t) 256);
+	length = std::min(length, (size_t) 1024);
 
 	auto bytes = new uint8_t[length];
 	file.read((char*) &bytes[0], length);
 
 	auto buf = Buffer(bytes, length);
+
+	// uint8_t test[] = { 0x41, 0x53 };
+	// auto buf = Buffer(test, sizeof(test));
 	while((ssize_t) buf.remaining() > 0)
 	{
 		auto instr = read(buf);
 		zpr::print("%s\n", print_intel(instr));
 	}
+
+	delete[] bytes;
 }
-
-
-
-
-
-
 
 
 

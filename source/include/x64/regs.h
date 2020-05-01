@@ -137,6 +137,13 @@ namespace instrad::x64
 		constexpr auto CR6      = Register(REG_FLAG_CONTROL | 0x06, 64, "cr6");
 		constexpr auto CR7      = Register(REG_FLAG_CONTROL | 0x07, 64, "cr7");
 		constexpr auto CR8      = Register(REG_FLAG_CONTROL | 0x08, 64, "cr8");
+		constexpr auto CR9      = Register(REG_FLAG_CONTROL | 0x09, 64, "cr9");
+		constexpr auto CR10     = Register(REG_FLAG_CONTROL | 0x0A, 64, "cr10");
+		constexpr auto CR11     = Register(REG_FLAG_CONTROL | 0x0B, 64, "cr11");
+		constexpr auto CR12     = Register(REG_FLAG_CONTROL | 0x0C, 64, "cr12");
+		constexpr auto CR13     = Register(REG_FLAG_CONTROL | 0x0D, 64, "cr13");
+		constexpr auto CR14     = Register(REG_FLAG_CONTROL | 0x0E, 64, "cr14");
+		constexpr auto CR15     = Register(REG_FLAG_CONTROL | 0x0F, 64, "cr15");
 
 		constexpr auto DR0      = Register(REG_FLAG_DEBUG | 0x00, 64, "dr0");
 		constexpr auto DR1      = Register(REG_FLAG_DEBUG | 0x01, 64, "dr1");
@@ -146,6 +153,14 @@ namespace instrad::x64
 		constexpr auto DR5      = Register(REG_FLAG_DEBUG | 0x05, 64, "dr5");
 		constexpr auto DR6      = Register(REG_FLAG_DEBUG | 0x06, 64, "dr6");
 		constexpr auto DR7      = Register(REG_FLAG_DEBUG | 0x07, 64, "dr7");
+		constexpr auto DR8      = Register(REG_FLAG_DEBUG | 0x08, 64, "dr8");
+		constexpr auto DR9      = Register(REG_FLAG_DEBUG | 0x09, 64, "dr9");
+		constexpr auto DR10     = Register(REG_FLAG_DEBUG | 0x0A, 64, "dr10");
+		constexpr auto DR11     = Register(REG_FLAG_DEBUG | 0x0B, 64, "dr11");
+		constexpr auto DR12     = Register(REG_FLAG_DEBUG | 0x0C, 64, "dr12");
+		constexpr auto DR13     = Register(REG_FLAG_DEBUG | 0x0D, 64, "dr13");
+		constexpr auto DR14     = Register(REG_FLAG_DEBUG | 0x0E, 64, "dr14");
+		constexpr auto DR15     = Register(REG_FLAG_DEBUG | 0x0F, 64, "dr15");
 
 
 		// none is none, perfectly valid

@@ -188,8 +188,8 @@ namespace instrad::x64
 		constexpr auto STC      = Op("stc");
 		constexpr auto CLI      = Op("cli");
 		constexpr auto STI      = Op("sti");
-		constexpr auto CLD      = Op("cli");
-		constexpr auto STD      = Op("sti");
+		constexpr auto CLD      = Op("cld");
+		constexpr auto STD      = Op("std");
 
 		constexpr auto BT       = Op("bt");
 		constexpr auto BSWAP    = Op("bswap");
