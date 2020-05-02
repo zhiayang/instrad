@@ -189,8 +189,11 @@ namespace instrad::x64
 		bool addressSizeOverride = false;
 		bool operandSizeOverride = false;
 
-		// if true, we are in 32-bit mode; if false, then 64-bit long mode.
+		// if true, we are in 16-bit mode; if false, then 32/64-bit mode.
 		bool legacyAddressingMode = false;
+
+		// if true, we are in 32-bit mode; if false, then 64-bit mode.
+		bool compatibilityMode = false;
 
 		// some instructions (push, call, etc.) default to 64-bit operands in long-mode;
 		// set this flag so the register decoder will return eg. RAX instead of EAX, without
@@ -251,122 +254,6 @@ namespace instrad::x64
 		uint64_t g = buf.pop();
 		uint64_t h = buf.pop();
 		return (int64_t) ((a << 0) | (b << 8) | (c << 16) | (d << 24) | (e << 32) | (f << 40) | (g << 48) | (h << 56));
-	}
-
-
-	constexpr MemoryRef decodeSIB(Buffer& buf, const InstrModifiers& mods)
-	{
-		union {
-			struct {
-				uint8_t base  : 3;
-				uint8_t index : 3;
-				uint8_t scale : 2;
-			};
-
-			uint8_t byte = 0;
-		} sib;
-
-		sib.byte = buf.pop();
-
-		auto mem = MemoryRef();
-
-		if(mods.rex.B)
-		{
-			if(sib.base == 5)
-			{
-				if(mods.modrm.mod == 0)
-				{
-					mem.setBase(regs::NONE);
-					mem.setDisplacement(readSignedImm32(buf));
-				}
-				else if(mods.modrm.mod == 1)
-				{
-					mem.setBase(regs::R13);
-					mem.setDisplacement(readSignedImm8(buf));
-				}
-				else if(mods.modrm.mod == 2)
-				{
-					mem.setBase(regs::R13);
-					mem.setDisplacement(readSignedImm32(buf));
-				}
-				else
-				{
-					mem.setBase(regs::INVALID);
-				}
-			}
-			else
-			{
-				switch(sib.base)
-				{
-					case 0: mem.setBase(regs::R8); break;
-					case 1: mem.setBase(regs::R9); break;
-					case 2: mem.setBase(regs::R10); break;
-					case 3: mem.setBase(regs::R11); break;
-					case 4: mem.setBase(regs::R12); break;
-					case 6: mem.setBase(regs::R14); break;
-					case 7: mem.setBase(regs::R15); break;
-
-					default: mem.setBase(regs::INVALID); break;
-				}
-			}
-		}
-		else
-		{
-			if(sib.base == 5)
-			{
-				if(mods.modrm.mod == 0)
-				{
-					mem.setBase(regs::NONE);
-					mem.setDisplacement(readSignedImm32(buf));
-				}
-				else if(mods.modrm.mod == 1)
-				{
-					mem.setBase(regs::RBP);
-					mem.setDisplacement(readSignedImm8(buf));
-				}
-				else if(mods.modrm.mod == 2)
-				{
-					mem.setBase(regs::RBP);
-					mem.setDisplacement(readSignedImm32(buf));
-				}
-				else
-				{
-					mem.setBase(regs::INVALID);
-				}
-			}
-			else
-			{
-				switch(sib.base)
-				{
-					case 0: mem.setBase(regs::RAX); break;
-					case 1: mem.setBase(regs::RCX); break;
-					case 2: mem.setBase(regs::RDX); break;
-					case 3: mem.setBase(regs::RBX); break;
-					case 4: mem.setBase(regs::RSP); break;
-					case 6: mem.setBase(regs::RSI); break;
-					case 7: mem.setBase(regs::RDI); break;
-
-					default: mem.setBase(regs::INVALID); break;
-				}
-			}
-		}
-
-		switch(sib.index)
-		{
-			case 0: mem.setIndex(mods.rex.X ? regs::R8  : regs::RAX);  break;
-			case 1: mem.setIndex(mods.rex.X ? regs::R9  : regs::RCX);  break;
-			case 2: mem.setIndex(mods.rex.X ? regs::R10 : regs::RDX);  break;
-			case 3: mem.setIndex(mods.rex.X ? regs::R11 : regs::RBX);  break;
-			case 4: mem.setIndex(mods.rex.X ? regs::R12 : regs::NONE); break;   // apparently you can't use RSP as an index
-			case 5: mem.setIndex(mods.rex.X ? regs::R13 : regs::RBP);  break;
-			case 6: mem.setIndex(mods.rex.X ? regs::R14 : regs::RSI);  break;
-			case 7: mem.setIndex(mods.rex.X ? regs::R15 : regs::RDI);  break;
-
-			default: mem.setIndex(regs::INVALID); break;
-		}
-
-		mem.setScale(1 << sib.scale);
-		return mem;
 	}
 
 	constexpr Register getSegmentRegister(const InstrModifiers& mods)
@@ -552,6 +439,82 @@ namespace instrad::x64
 	}
 
 
+	constexpr MemoryRef decodeSIB(Buffer& buf, const InstrModifiers& mods, bool* didReadDisplacement)
+	{
+		union {
+			struct {
+				uint8_t base  : 3;
+				uint8_t index : 3;
+				uint8_t scale : 2;
+			};
+
+			uint8_t byte = 0;
+		} sib;
+
+		sib.byte = buf.pop();
+
+		auto mem = MemoryRef();
+
+		if(sib.base == 5)
+		{
+			if(mods.modrm.mod == 0)
+			{
+				mem.setBase(regs::NONE);
+				mem.setDisplacement(readSignedImm32(buf));
+				*didReadDisplacement = true;
+			}
+			else if(mods.modrm.mod == 1)
+			{
+				mem.setBase(mods.rex.B ? regs::R13 : regs::RBP);
+				mem.setDisplacement(readSignedImm8(buf));
+				*didReadDisplacement = true;
+			}
+			else if(mods.modrm.mod == 2)
+			{
+				mem.setBase(mods.rex.B ? regs::R13 : regs::RBP);
+				mem.setDisplacement(readSignedImm32(buf));
+				*didReadDisplacement = true;
+			}
+			else
+			{
+				mem.setBase(regs::INVALID);
+			}
+		}
+		else
+		{
+			switch(sib.base)
+			{
+				case 0: mem.setBase(mods.rex.B ? regs::R8  : regs::RAX); break;
+				case 1: mem.setBase(mods.rex.B ? regs::R9  : regs::RCX); break;
+				case 2: mem.setBase(mods.rex.B ? regs::R10 : regs::RDX); break;
+				case 3: mem.setBase(mods.rex.B ? regs::R11 : regs::RBX); break;
+				case 4: mem.setBase(mods.rex.B ? regs::R12 : regs::RSP); break;
+				case 6: mem.setBase(mods.rex.B ? regs::R14 : regs::RSI); break;
+				case 7: mem.setBase(mods.rex.B ? regs::R15 : regs::RDI); break;
+
+				default: mem.setBase(regs::INVALID); break;
+			}
+		}
+
+		switch(sib.index)
+		{
+			case 0: mem.setIndex(mods.rex.X ? regs::R8  : regs::RAX);  break;
+			case 1: mem.setIndex(mods.rex.X ? regs::R9  : regs::RCX);  break;
+			case 2: mem.setIndex(mods.rex.X ? regs::R10 : regs::RDX);  break;
+			case 3: mem.setIndex(mods.rex.X ? regs::R11 : regs::RBX);  break;
+			case 4: mem.setIndex(mods.rex.X ? regs::R12 : regs::NONE); break;   // apparently you can't use RSP as an index
+			case 5: mem.setIndex(mods.rex.X ? regs::R13 : regs::RBP);  break;
+			case 6: mem.setIndex(mods.rex.X ? regs::R14 : regs::RSI);  break;
+			case 7: mem.setIndex(mods.rex.X ? regs::R15 : regs::RDI);  break;
+
+			default: mem.setIndex(regs::INVALID); break;
+		}
+
+		mem.setScale(1 << sib.scale);
+		return mem;
+	}
+
+
 	constexpr Register getRegisterFromModRM(Buffer& buf, bool isByteMode, const InstrModifiers& mods)
 	{
 		(void) buf;
@@ -566,9 +529,9 @@ namespace instrad::x64
 		}
 	}
 
-	constexpr MemoryRef getMemoryFromModRM(Buffer& buf, bool isByteMode, const InstrModifiers& mods)
+	constexpr MemoryRef getMemoryFromModRM(Buffer& buf, bool isByteMode, const InstrModifiers& mods, int _bits = 0)
 	{
-		int bits = (
+		int bits = (_bits != 0) ? _bits : (
 			isByteMode
 				? 8
 				: mods.operandSizeOverride
@@ -607,14 +570,19 @@ namespace instrad::x64
 						case 1:  return MemoryRef(bits, mods.rex.B ? regs::R9  : regs::RCX);
 						case 2:  return MemoryRef(bits, mods.rex.B ? regs::R10 : regs::RDX);
 						case 3:  return MemoryRef(bits, mods.rex.B ? regs::R11 : regs::RBX);
-						case 4:  return decodeSIB(buf, mods).setBits(bits);
 
 						// in 64-bit mode, this becomes rip-relative addressing. if not, it is just disp32.
-						case 5:  return mods.rex.present()  ? MemoryRef(bits, regs::RIP, readSignedImm32(buf))
-															: MemoryRef(bits, readSignedImm32(buf));
+						case 5:  return !mods.compatibilityMode ? MemoryRef(bits, regs::RIP, readSignedImm32(buf))
+																	: MemoryRef(bits, readSignedImm32(buf));
 
 						case 6:  return MemoryRef(bits, mods.rex.B ? regs::R14 : regs::RSI);
 						case 7:  return MemoryRef(bits, mods.rex.B ? regs::R15 : regs::RDI);
+
+						// SIB madness
+						case 4: {
+							bool dummy = false;
+							return decodeSIB(buf, mods, &dummy).setBits(bits);
+						}
 					}
 				}
 			}
@@ -644,10 +612,17 @@ namespace instrad::x64
 						case 1:  return MemoryRef(bits, mods.rex.B ? regs::R9  : regs::RCX, readSignedImm8(buf));
 						case 2:  return MemoryRef(bits, mods.rex.B ? regs::R10 : regs::RDX, readSignedImm8(buf));
 						case 3:  return MemoryRef(bits, mods.rex.B ? regs::R11 : regs::RBX, readSignedImm8(buf));
-						case 4:  return decodeSIB(buf, mods).setBits(bits).setDisplacement(readSignedImm8(buf));
 						case 5:  return MemoryRef(bits, mods.rex.B ? regs::R13 : regs::RBP, readSignedImm8(buf));
 						case 6:  return MemoryRef(bits, mods.rex.B ? regs::R14 : regs::RSI, readSignedImm8(buf));
 						case 7:  return MemoryRef(bits, mods.rex.B ? regs::R15 : regs::RDI, readSignedImm8(buf));
+
+						case 4: {
+							bool disp = false;
+							auto ret = decodeSIB(buf, mods, &disp).setBits(bits);
+							if(!disp) ret.setDisplacement(readSignedImm8(buf));
+
+							return ret;
+						}
 					}
 				}
 			}
@@ -677,10 +652,17 @@ namespace instrad::x64
 						case 1:  return MemoryRef(bits, mods.rex.B ? regs::R9  : regs::RCX, readSignedImm32(buf));
 						case 2:  return MemoryRef(bits, mods.rex.B ? regs::R10 : regs::RDX, readSignedImm32(buf));
 						case 3:  return MemoryRef(bits, mods.rex.B ? regs::R11 : regs::RBX, readSignedImm32(buf));
-						case 4:  return decodeSIB(buf, mods).setBits(bits).setDisplacement(readSignedImm32(buf));
 						case 5:  return MemoryRef(bits, mods.rex.B ? regs::R13 : regs::RBP, readSignedImm32(buf));
 						case 6:  return MemoryRef(bits, mods.rex.B ? regs::R14 : regs::RSI, readSignedImm32(buf));
 						case 7:  return MemoryRef(bits, mods.rex.B ? regs::R15 : regs::RDI, readSignedImm32(buf));
+
+						case 4: {
+							bool disp = false;
+							auto ret = decodeSIB(buf, mods, &disp).setBits(bits);
+							if(!disp) ret.setDisplacement(readSignedImm32(buf));
+
+							return ret;
+						}
 					}
 				}
 			}

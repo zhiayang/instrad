@@ -27,10 +27,12 @@ namespace instrad::x64
 	{
 		// 0=ax, 1=cx, 2=dx, 3=bx, 4=sp, 5=bp, 6=si, 7=di, 8=r8, etc, the rest are sane.
 
-		constexpr int REG_FLAG_IP       = 0x80;
-		constexpr int REG_FLAG_SEGMENT  = 0x100;
-		constexpr int REG_FLAG_CONTROL  = 0x200;
-		constexpr int REG_FLAG_DEBUG    = 0x400;
+		constexpr int REG_FLAG_IP       = 0x0080;
+		constexpr int REG_FLAG_SEGMENT  = 0x0100;
+		constexpr int REG_FLAG_CONTROL  = 0x0200;
+		constexpr int REG_FLAG_DEBUG    = 0x0400;
+		constexpr int REG_FLAG_MMX      = 0x0800;
+		constexpr int REG_FLAG_SSE      = 0x1000;
 
 		constexpr auto  AL      = Register(0,  8,  "al");
 		constexpr auto  AH      = Register(0,  8,  "ah");
@@ -161,6 +163,53 @@ namespace instrad::x64
 		constexpr auto DR13     = Register(REG_FLAG_DEBUG | 0x0D, 64, "dr13");
 		constexpr auto DR14     = Register(REG_FLAG_DEBUG | 0x0E, 64, "dr14");
 		constexpr auto DR15     = Register(REG_FLAG_DEBUG | 0x0F, 64, "dr15");
+
+
+		constexpr auto MMX0     = Register(REG_FLAG_MMX | 0x00, 64, "mmx0");
+		constexpr auto MMX1     = Register(REG_FLAG_MMX | 0x01, 64, "mmx1");
+		constexpr auto MMX2     = Register(REG_FLAG_MMX | 0x02, 64, "mmx2");
+		constexpr auto MMX3     = Register(REG_FLAG_MMX | 0x03, 64, "mmx3");
+		constexpr auto MMX4     = Register(REG_FLAG_MMX | 0x04, 64, "mmx4");
+		constexpr auto MMX5     = Register(REG_FLAG_MMX | 0x05, 64, "mmx5");
+		constexpr auto MMX6     = Register(REG_FLAG_MMX | 0x06, 64, "mmx6");
+		constexpr auto MMX7     = Register(REG_FLAG_MMX | 0x07, 64, "mmx7");
+
+		constexpr auto XMM0     = Register(REG_FLAG_SSE | 0x00, 128, "xmm0");
+		constexpr auto XMM1     = Register(REG_FLAG_SSE | 0x01, 128, "xmm1");
+		constexpr auto XMM2     = Register(REG_FLAG_SSE | 0x02, 128, "xmm2");
+		constexpr auto XMM3     = Register(REG_FLAG_SSE | 0x03, 128, "xmm3");
+		constexpr auto XMM4     = Register(REG_FLAG_SSE | 0x04, 128, "xmm4");
+		constexpr auto XMM5     = Register(REG_FLAG_SSE | 0x05, 128, "xmm5");
+		constexpr auto XMM6     = Register(REG_FLAG_SSE | 0x06, 128, "xmm6");
+		constexpr auto XMM7     = Register(REG_FLAG_SSE | 0x07, 128, "xmm7");
+		constexpr auto XMM8     = Register(REG_FLAG_SSE | 0x08, 128, "xmm8");
+		constexpr auto XMM9     = Register(REG_FLAG_SSE | 0x09, 128, "xmm9");
+		constexpr auto XMM10    = Register(REG_FLAG_SSE | 0x0A, 128, "xmm10");
+		constexpr auto XMM11    = Register(REG_FLAG_SSE | 0x0B, 128, "xmm11");
+		constexpr auto XMM12    = Register(REG_FLAG_SSE | 0x0C, 128, "xmm12");
+		constexpr auto XMM13    = Register(REG_FLAG_SSE | 0x0D, 128, "xmm13");
+		constexpr auto XMM14    = Register(REG_FLAG_SSE | 0x0E, 128, "xmm14");
+		constexpr auto XMM15    = Register(REG_FLAG_SSE | 0x0F, 128, "xmm15");
+
+		constexpr auto YMM0     = Register(REG_FLAG_SSE | 0x00, 256, "ymm0");
+		constexpr auto YMM1     = Register(REG_FLAG_SSE | 0x01, 256, "ymm1");
+		constexpr auto YMM2     = Register(REG_FLAG_SSE | 0x02, 256, "ymm2");
+		constexpr auto YMM3     = Register(REG_FLAG_SSE | 0x03, 256, "ymm3");
+		constexpr auto YMM4     = Register(REG_FLAG_SSE | 0x04, 256, "ymm4");
+		constexpr auto YMM5     = Register(REG_FLAG_SSE | 0x05, 256, "ymm5");
+		constexpr auto YMM6     = Register(REG_FLAG_SSE | 0x06, 256, "ymm6");
+		constexpr auto YMM7     = Register(REG_FLAG_SSE | 0x07, 256, "ymm7");
+		constexpr auto YMM8     = Register(REG_FLAG_SSE | 0x08, 256, "ymm8");
+		constexpr auto YMM9     = Register(REG_FLAG_SSE | 0x09, 256, "ymm9");
+		constexpr auto YMM10    = Register(REG_FLAG_SSE | 0x0A, 256, "ymm10");
+		constexpr auto YMM11    = Register(REG_FLAG_SSE | 0x0B, 256, "ymm11");
+		constexpr auto YMM12    = Register(REG_FLAG_SSE | 0x0C, 256, "ymm12");
+		constexpr auto YMM13    = Register(REG_FLAG_SSE | 0x0D, 256, "ymm13");
+		constexpr auto YMM14    = Register(REG_FLAG_SSE | 0x0E, 256, "ymm14");
+		constexpr auto YMM15    = Register(REG_FLAG_SSE | 0x0F, 256, "ymm15");
+
+
+
 
 
 		// none is none, perfectly valid

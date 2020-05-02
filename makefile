@@ -20,7 +20,7 @@ INCLUDES        = -Isource/include
 
 
 all: build/instrad_test
-	@build/instrad_test build/kernel.bin
+	@build/instrad_test build/player.bin
 
 build/instrad_test: $(CXXOBJ)
 	@$(CXX) $(CXXFLAGS) -o $@ $(CXXOBJ)

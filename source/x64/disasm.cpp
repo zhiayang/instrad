@@ -24,35 +24,45 @@ namespace instrad::x64
 		}
 	}
 
-	Operand getOperand(Buffer& buf, OperandKind kind, InstrModifiers& mods)
+	Operand getOperand(Buffer& buf, OpKind kind, InstrModifiers& mods)
 	{
+		// TODO: we should not promote Mem16/RegMem16/Reg16!!
 		switch(kind)
 		{
 			// byte-sized things are not promoted
-			case OperandKind::Reg8:
+			case OpKind::Reg8:
 				return getRegisterFromModRM(buf, /* byte; */ true, mods);
 
-			case OperandKind::Reg64: mods.default64BitRegister = true; [[fallthrough]];
-			case OperandKind::Reg16:
-			case OperandKind::Reg32:
+			case OpKind::Reg64: mods.default64BitRegister = true; [[fallthrough]];
+			case OpKind::Reg16:
+			case OpKind::Reg32:
 				return getRegisterFromModRM(buf, /* byte: */ false, mods);
 
 
 
-			case OperandKind::RegMem8:
+			case OpKind::RegMem8:
 				return getRegisterOrMemoryFromModRM(buf, /* byte; */ true, mods);
 
-			case OperandKind::RegMem64: mods.default64BitRegister = true; [[fallthrough]];
-			case OperandKind::RegMem16:
-			case OperandKind::RegMem32:
+			case OpKind::RegMem64: mods.default64BitRegister = true; [[fallthrough]];
+			case OpKind::RegMem16:
+			case OpKind::RegMem32:
 				return getRegisterOrMemoryFromModRM(buf, /* byte; */ false, mods);
 
 
+			case OpKind::Mem8:
+			case OpKind::Mem16:
+			case OpKind::Mem32:
+			case OpKind::Mem64:
+				return getMemoryFromModRM(buf, /* byte: */ kind == OpKind::Mem8, mods);
 
-			case OperandKind::Imm8:
+			case OpKind::Mem128:    return getMemoryFromModRM(buf, /* byte: */ false, mods, /* bits: */ 128);
+			case OpKind::Mem256:    return getMemoryFromModRM(buf, /* byte: */ false, mods, /* bits: */ 256);
+
+
+			case OpKind::Imm8:
 				return readSignedImm8(buf);
 
-			case OperandKind::SignExtImm8: {
+			case OpKind::SignExtImm8: {
 				if(mods.operandSizeOverride)
 					return (int16_t) readSignedImm8(buf);
 
@@ -63,14 +73,14 @@ namespace instrad::x64
 					return (int32_t) readSignedImm8(buf);
 			}
 
-			case OperandKind::Imm16:
-			case OperandKind::Imm32:
-			case OperandKind::Imm64: {
+			case OpKind::Imm16:
+			case OpKind::Imm32:
+			case OpKind::Imm64: {
 				// need to promote/demote
 				if(mods.operandSizeOverride)
 					return readSignedImm16(buf);
 
-				else if(kind == OperandKind::Imm64 && mods.rex.W)
+				else if(kind == OpKind::Imm64 && mods.rex.W)
 					return readSignedImm64(buf);
 
 				else if(mods.rex.W)
@@ -80,15 +90,15 @@ namespace instrad::x64
 					return readSignedImm32(buf);
 			}
 
-			case OperandKind::SignExtImm32:
+			case OpKind::SignExtImm32:
 				return (int64_t) readSignedImm32(buf);
 
 			// TODO: need to handle relative offsets properly
-			case OperandKind::Rel8Offset:
+			case OpKind::Rel8Offset:
 				return readSignedImm8(buf);
 
-			case OperandKind::Rel16Offset:
-			case OperandKind::Rel32Offset: {
+			case OpKind::Rel16Offset:
+			case OpKind::Rel32Offset: {
 				if(mods.operandSizeOverride)
 					return readSignedImm16(buf);
 
@@ -96,25 +106,25 @@ namespace instrad::x64
 					return readSignedImm32(buf);
 			}
 
-			case OperandKind::Memory:
+			case OpKind::Memory:
 				return getMemoryFromModRM(buf, /* byte: */ false, mods);
 
-			case OperandKind::ImplicitCS:   return regs::CS;
-			case OperandKind::ImplicitDS:   return regs::DS;
-			case OperandKind::ImplicitES:   return regs::ES;
-			case OperandKind::ImplicitFS:   return regs::FS;
-			case OperandKind::ImplicitGS:   return regs::GS;
-			case OperandKind::ImplicitSS:   return regs::SS;
-			case OperandKind::ImplicitCL:   return regs::CL;
-			case OperandKind::ImplicitCX:   return regs::CX;
-			case OperandKind::ImplicitECX:  return regs::ECX;
-			case OperandKind::ImplicitDX:   return regs::DX;
+			case OpKind::ImplicitCS:   return regs::CS;
+			case OpKind::ImplicitDS:   return regs::DS;
+			case OpKind::ImplicitES:   return regs::ES;
+			case OpKind::ImplicitFS:   return regs::FS;
+			case OpKind::ImplicitGS:   return regs::GS;
+			case OpKind::ImplicitSS:   return regs::SS;
+			case OpKind::ImplicitCL:   return regs::CL;
+			case OpKind::ImplicitCX:   return regs::CX;
+			case OpKind::ImplicitECX:  return regs::ECX;
+			case OpKind::ImplicitDX:   return regs::DX;
 
-			case OperandKind::ImplicitAL:   return regs::AL;
+			case OpKind::ImplicitAL:   return regs::AL;
 
-			case OperandKind::ImplicitAX:
-			case OperandKind::ImplicitEAX:
-			case OperandKind::ImplicitRAX: {
+			case OpKind::ImplicitAX:
+			case OpKind::ImplicitEAX:
+			case OpKind::ImplicitRAX: {
 				if(mods.operandSizeOverride)
 					return regs::AX;
 				else if(mods.rex.W)
@@ -124,34 +134,41 @@ namespace instrad::x64
 			}
 
 
-			case OperandKind::SegmentReg:   return getSegmentRegister(mods);
-			case OperandKind::ControlReg:   return getControlRegister(mods);
-			case OperandKind::DebugReg:     return getDebugRegister(mods);
+			case OpKind::SegmentReg:   return getSegmentRegister(mods);
+			case OpKind::ControlReg:   return getControlRegister(mods);
+			case OpKind::DebugReg:     return getDebugRegister(mods);
 
-			case OperandKind::MemoryOfs8:
-			case OperandKind::MemoryOfs16:
-			case OperandKind::MemoryOfs32:
-			case OperandKind::MemoryOfs64: {
+			case OpKind::MemoryOfs8:
+			case OpKind::MemoryOfs16:
+			case OpKind::MemoryOfs32:
+			case OpKind::MemoryOfs64: {
 				// kekw
-				int bits = 8 * (1 << ((int) kind - (int) OperandKind::MemoryOfs8));
+				int bits = 8 * (1 << ((int) kind - (int) OpKind::MemoryOfs8));
 
 				auto seg = getSegmentOfOverride(mods.segmentOverride);
-				if(mods.legacyAddressingMode)
+				if(mods.compatibilityMode)
 					return MemoryRef(bits, (uint32_t) readSignedImm32(buf)).setSegment(seg);
 
 				else
 					return MemoryRef(bits, (uint64_t) readSignedImm64(buf)).setSegment(seg);
 			}
 
+			case OpKind::MmxReg:
+			case OpKind::MmxRegMem64:
 
+			case OpKind::XmmReg:
+			case OpKind::XmmRegMem128:
 
-			case OperandKind::Ptr16_16:
-			case OperandKind::Ptr16_32:
+			case OpKind::YmmReg:
+			case OpKind::YmmRegMem256:
+
+			case OpKind::Ptr16_16:
+			case OpKind::Ptr16_32:
 				// not supported
 				printf("unsupported operand!\n");
 				return regs::R15;
 
-			case OperandKind::None:
+			case OpKind::None:
 				return { };
 		}
 	}
