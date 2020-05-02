@@ -4,7 +4,8 @@
 
 #pragma once
 
-#include "defs.h"
+#include <stddef.h>
+#include <stdint.h>
 
 namespace instrad::x64
 {

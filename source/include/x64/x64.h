@@ -10,7 +10,7 @@
 
 #include <stdio.h>
 
-#include "defs.h"
+#include "buffer.h"
 
 #include "ops.h"
 #include "regs.h"

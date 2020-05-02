@@ -10,7 +10,7 @@
 #include <algorithm>
 
 #include "zpr.h"
-#include "defs.h"
+#include "buffer.h"
 #include "x64/x64.h"
 
 

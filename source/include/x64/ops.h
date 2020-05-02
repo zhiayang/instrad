@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "defs.h"
-#include <string.h>
+#include <stddef.h>
+#include <stdint.h>
 
 namespace instrad::x64
 {
@@ -389,6 +389,7 @@ namespace instrad::x64
 		constexpr auto PSRLW        = Op("psrlw");
 		constexpr auto PSRLD        = Op("psrld");
 		constexpr auto PSRLQ        = Op("psrlq");
+		constexpr auto PSRLDQ       = Op("psrldq");
 		constexpr auto PADDQ        = Op("paddq");
 		constexpr auto PMULLW       = Op("pmullw");
 		constexpr auto PMOVMSKB     = Op("pmovmskb");
@@ -412,6 +413,7 @@ namespace instrad::x64
 		constexpr auto PSLLW        = Op("psllw");
 		constexpr auto PSLLD        = Op("pslld");
 		constexpr auto PSLLQ        = Op("psllq");
+		constexpr auto PSLLDQ       = Op("pslldq");
 		constexpr auto PMULUDQ      = Op("pmuludq");
 		constexpr auto PMADDWD      = Op("pmaddwd");
 		constexpr auto PSADBW       = Op("psadbw");

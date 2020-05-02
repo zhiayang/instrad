@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include "defs.h"
 #include "ops.h"
 
 namespace instrad::x64
@@ -106,7 +105,7 @@ namespace instrad::x64
 	struct TableEntry
 	{
 	private:
-		using __Foozle = OpKind[3];
+		using __Foozle = OpKind[4];
 
 	public:
 		constexpr bool present() const { return this->m_op != ops::INVALID; }
@@ -129,7 +128,7 @@ namespace instrad::x64
 		uint8_t m_opcode = 0;
 		int m_numOperands = 0;
 		bool m_lowNibbleRegIdx = false;
-		OpKind m_operands[3] = { OpKind::None, OpKind::None, OpKind::None };
+		OpKind m_operands[4] = { OpKind::None, OpKind::None, OpKind::None, OpKind::None };
 
 		bool m_needsModRM = false;
 		bool m_extensionUsesRMBits = false;
@@ -143,6 +142,7 @@ namespace instrad::x64
 		friend constexpr TableEntry entry_1(uint8_t, const Op&, OpKind);
 		friend constexpr TableEntry entry_2(uint8_t, const Op&, OpKind, OpKind);
 		friend constexpr TableEntry entry_3(uint8_t, const Op&, OpKind, OpKind, OpKind);
+		friend constexpr TableEntry entry_4(uint8_t, const Op&, OpKind, OpKind, OpKind, OpKind);
 		friend constexpr TableEntry entry_lnri_1(uint8_t, const Op&, OpKind);
 		friend constexpr TableEntry entry_lnri_2(uint8_t, const Op&, OpKind, OpKind);
 		friend constexpr TableEntry entry_ext(uint8_t, const TableEntry*);
@@ -217,6 +217,21 @@ namespace instrad::x64
 		ret.m_operands[0] = dst;
 		ret.m_operands[1] = src;
 		ret.m_operands[2] = extra;
+		return ret;
+	}
+
+	constexpr TableEntry entry_4(uint8_t opcode, const Op& op, OpKind dst, OpKind src, OpKind extra, OpKind extra2)
+	{
+		// only used by imul
+		auto ret = TableEntry();
+		ret.m_op = op;
+		ret.m_opcode = opcode;
+		ret.m_numOperands = 4;
+		ret.m_needsModRM = true;
+		ret.m_operands[0] = dst;
+		ret.m_operands[1] = src;
+		ret.m_operands[2] = extra;
+		ret.m_operands[3] = extra2;
 		return ret;
 	}
 
@@ -1294,11 +1309,11 @@ namespace instrad::x64
 	static_assert(ArrayLength(ModRMExt_0F_PrefixNone_12_Mod3) == 2, "table invalid");
 	static_assert(ArrayLength(ModRMExt_0F_PrefixNone_16_Mod3) == 2, "table invalid");
 	static_assert(ArrayLength(ModRMExt_0F_PrefixAny_C7) == 8, "table invalid");
-	static_assert(ArrayLength(ModRMExt_0F_PrefixNone_BA) == 8, "table invalid");
-	static_assert(ArrayLength(ModRMExt_0F_PrefixNone_B9) == 8, "table invalid");
 	static_assert(ArrayLength(ModRMExt_0F_PrefixNone_71) == 8, "table invalid");
 	static_assert(ArrayLength(ModRMExt_0F_PrefixNone_72) == 8, "table invalid");
 	static_assert(ArrayLength(ModRMExt_0F_PrefixNone_73) == 8, "table invalid");
+	static_assert(ArrayLength(ModRMExt_0F_PrefixNone_B9) == 8, "table invalid");
+	static_assert(ArrayLength(ModRMExt_0F_PrefixNone_BA) == 8, "table invalid");
 
 
 	constexpr TableEntry SecondaryOpcodeMap_F0_Prefix_None[] = {
@@ -1494,6 +1509,55 @@ namespace instrad::x64
 
 
 
+	constexpr TableEntry ModRMExt_0F_Prefix66_71[] = {
+		entry_blank,
+		entry_blank,
+		entry_2(0x71, ops::PSRLW, OpKind::RegXmm_Rm, OpKind::Imm8),
+		entry_blank,
+		entry_2(0x71, ops::PSRAW, OpKind::RegXmm_Rm, OpKind::Imm8),
+		entry_blank,
+		entry_2(0x71, ops::PSLLW, OpKind::RegXmm_Rm, OpKind::Imm8),
+		entry_blank,
+	};
+
+	constexpr TableEntry ModRMExt_0F_Prefix66_72[] = {
+		entry_blank,
+		entry_blank,
+		entry_2(0x72, ops::PSRLD, OpKind::RegXmm_Rm, OpKind::Imm8),
+		entry_blank,
+		entry_2(0x72, ops::PSRAD, OpKind::RegXmm_Rm, OpKind::Imm8),
+		entry_blank,
+		entry_2(0x72, ops::PSLLD, OpKind::RegXmm_Rm, OpKind::Imm8),
+		entry_blank,
+	};
+
+	constexpr TableEntry ModRMExt_0F_Prefix66_73[] = {
+		entry_blank,
+		entry_blank,
+		entry_2(0x73, ops::PSRLQ, OpKind::RegXmm_Rm, OpKind::Imm8),
+		entry_2(0x73, ops::PSRLDQ, OpKind::RegXmm_Rm, OpKind::Imm8),
+		entry_blank,
+		entry_blank,
+		entry_2(0x73, ops::PSLLQ, OpKind::RegXmm_Rm, OpKind::Imm8),
+		entry_2(0x73, ops::PSLLDQ, OpKind::RegXmm_Rm, OpKind::Imm8),
+	};
+
+	constexpr TableEntry ModRMExt_0F_Prefix66_78[] = {
+		entry_3(0x73, ops::EXTRQ, OpKind::RegMmx_Rm, OpKind::Imm8, OpKind::Imm8),
+		entry_blank,
+		entry_blank,
+		entry_blank,
+		entry_blank,
+		entry_blank,
+		entry_blank,
+		entry_blank,
+	};
+
+	static_assert(ArrayLength(ModRMExt_0F_Prefix66_71) == 8, "table invalid");
+	static_assert(ArrayLength(ModRMExt_0F_Prefix66_72) == 8, "table invalid");
+	static_assert(ArrayLength(ModRMExt_0F_Prefix66_73) == 8, "table invalid");
+	static_assert(ArrayLength(ModRMExt_0F_Prefix66_78) == 8, "table invalid");
+
 	constexpr TableEntry SecondaryOpcodeMap_F0_Prefix_66[] = {
 		// opcodes 0x00 to 0x0F are not prefixed
 		entry_none(0x00), entry_none(0x01), entry_none(0x02), entry_none(0x03),
@@ -1501,14 +1565,14 @@ namespace instrad::x64
 		entry_none(0x08), entry_none(0x09), entry_none(0x0A), entry_none(0x0B),
 		entry_none(0x0C), entry_none(0x0D), entry_none(0x0E), entry_none(0x0F),
 
-		entry_none(0x10),
-		entry_none(0x11),
-		entry_none(0x12),
-		entry_none(0x13),
-		entry_none(0x14),
-		entry_none(0x15),
-		entry_none(0x16),
-		entry_none(0x17),
+		entry_2(0x10, ops::MOVUPD, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x11, ops::MOVUPD, OpKind::RegXmmMem128, OpKind::RegXmm),
+		entry_2(0x12, ops::MOVLPD, OpKind::RegXmm, OpKind::Mem64),
+		entry_2(0x13, ops::MOVLPD, OpKind::Mem64, OpKind::RegXmm),
+		entry_2(0x14, ops::UNPCKLPD, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x15, ops::UNPCKHPD, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x16, ops::MOVHPD, OpKind::RegXmm, OpKind::Mem64),
+		entry_2(0x17, ops::MOVHPD, OpKind::Mem64, OpKind::RegXmm),
 
 		// opcodes 0x18 to 0x27 are not prefixed
 		entry_none(0x18), entry_none(0x19), entry_none(0x1A), entry_none(0x1B),
@@ -1516,14 +1580,14 @@ namespace instrad::x64
 		entry_none(0x20), entry_none(0x21), entry_none(0x22), entry_none(0x23),
 		entry_none(0x24), entry_none(0x25), entry_none(0x26), entry_none(0x27),
 
-		entry_none(0x28),
-		entry_none(0x29),
-		entry_none(0x2A),
-		entry_none(0x2B),
-		entry_none(0x2C),
-		entry_none(0x2D),
-		entry_none(0x2E),
-		entry_none(0x2F),
+		entry_2(0x28, ops::MOVAPD, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x29, ops::MOVAPD, OpKind::RegXmmMem128, OpKind::RegXmm),
+		entry_2(0x2A, ops::CVTPI2PD, OpKind::RegXmm, OpKind::RegMmxMem64),
+		entry_2(0x2B, ops::MOVNTPD, OpKind::Mem128, OpKind::RegXmm),
+		entry_2(0x2C, ops::CVTTPD2PI, OpKind::RegMmx, OpKind::RegXmmMem128),
+		entry_2(0x2D, ops::CVTPD2PI, OpKind::RegMmx, OpKind::RegXmmMem128),
+		entry_2(0x2E, ops::UCOMISD, OpKind::RegXmm, OpKind::RegXmmMem64),
+		entry_2(0x2F, ops::COMISD, OpKind::RegXmm, OpKind::RegXmmMem64),
 
 		// opcodes 0x30 to 0x4F are not prefixed
 		entry_none(0x30), entry_none(0x31), entry_none(0x32), entry_none(0x33),
@@ -1535,61 +1599,61 @@ namespace instrad::x64
 		entry_none(0x48), entry_none(0x49), entry_none(0x4A), entry_none(0x4B),
 		entry_none(0x4C), entry_none(0x4D), entry_none(0x4E), entry_none(0x4F),
 
-		entry_none(0x50),
-		entry_none(0x51),
+		entry_2(0x50, ops::MOVMSKPD, OpKind::Reg32, OpKind::RegXmm_Rm),
+		entry_2(0x51, ops::SQRTPD, OpKind::RegXmm, OpKind::RegXmmMem128),
 		entry_none(0x52),
 		entry_none(0x53),
-		entry_none(0x54),
-		entry_none(0x55),
-		entry_none(0x56),
-		entry_none(0x57),
+		entry_2(0x54, ops::ANDPD, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x55, ops::ANDNPD, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x56, ops::ORPD, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x57, ops::XORPD, OpKind::RegXmm, OpKind::RegXmmMem128),
 
-		entry_none(0x58),
-		entry_none(0x59),
-		entry_none(0x5A),
-		entry_none(0x5B),
-		entry_none(0x5C),
-		entry_none(0x5D),
-		entry_none(0x5E),
-		entry_none(0x5F),
+		entry_2(0x58, ops::ADDPD, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x59, ops::MULPD, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x5A, ops::CVTPD2PS, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x5B, ops::CVTPS2DQ, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x5C, ops::SUBPD, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x5D, ops::MINPD, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x5E, ops::DIVPD, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x5F, ops::MAXPD, OpKind::RegXmm, OpKind::RegXmmMem128),
 
-		entry_none(0x60),
-		entry_none(0x61),
-		entry_none(0x62),
-		entry_none(0x63),
-		entry_none(0x64),
-		entry_none(0x65),
-		entry_none(0x66),
-		entry_none(0x67),
+		entry_2(0x60, ops::PUNPCKLBW, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x61, ops::PUNPCKLWD, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x62, ops::PUNPCKLDQ, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x63, ops::PACKSSWB, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x64, ops::PCMPGTB, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x65, ops::PCMPGTW, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x66, ops::PCMPGTD, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x67, ops::PACKUSWB, OpKind::RegXmm, OpKind::RegXmmMem128),
 
-		entry_none(0x68),
-		entry_none(0x69),
-		entry_none(0x6A),
-		entry_none(0x6B),
-		entry_none(0x6C),
-		entry_none(0x6D),
-		entry_none(0x6E),
-		entry_none(0x6F),
+		entry_2(0x68, ops::PUNPCKHBW, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x69, ops::PUNPCKHWD, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x6A, ops::PUNPCKHDQ, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x6B, ops::PACKSSDW, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x6C, ops::PUNPCKLQDQ, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x6D, ops::PUNPCKHQDQ, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x6E, ops::MOVD, OpKind::RegXmm, OpKind::RegMem32),
+		entry_2(0x6F, ops::MOVDQA, OpKind::RegXmm, OpKind::RegXmmMem128),
 
-		entry_none(0x70),
-		entry_none(0x71),
-		entry_none(0x72),
-		entry_none(0x73),
-		entry_none(0x74),
-		entry_none(0x75),
-		entry_none(0x76),
+		entry_3(0x70, ops::PSHUFD, OpKind::RegXmm, OpKind::RegXmmMem128, OpKind::Imm8),
+		entry_ext(0x71, &ModRMExt_0F_Prefix66_71[0]),
+		entry_ext(0x72, &ModRMExt_0F_Prefix66_72[0]),
+		entry_ext(0x73, &ModRMExt_0F_Prefix66_73[0]),
+		entry_2(0x74, ops::PCMPEQB, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x75, ops::PCMPEQW, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x76, ops::PCMPEQD, OpKind::RegXmm, OpKind::RegXmmMem128),
 		entry_none(0x77),
 
-		entry_none(0x78),
-		entry_none(0x79),
+		entry_ext(0x78, &ModRMExt_0F_Prefix66_78[0]),
+		entry_2(0x79, ops::EXTRQ, OpKind::RegXmm, OpKind::RegXmm_Rm),
 		entry_none(0x7A),
 		entry_none(0x7B),
-		entry_none(0x7C),
-		entry_none(0x7D),
-		entry_none(0x7E),
-		entry_none(0x7F),
+		entry_2(0x7C, ops::HADDPD, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x7D, ops::HSUBPD, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x7E, ops::MOVD, OpKind::RegMem32, OpKind::RegXmm),
+		entry_2(0x7F, ops::MOVDQA, OpKind::RegXmmMem128, OpKind::RegXmm),
 
-		// opcodes 0x80 to 0xAF are not prefixed
+		// opcodes 0x80 to 0xB7 are not prefixed
 		entry_none(0x80), entry_none(0x81), entry_none(0x82), entry_none(0x83),
 		entry_none(0x84), entry_none(0x85), entry_none(0x86), entry_none(0x87),
 		entry_none(0x88), entry_none(0x89), entry_none(0x8A), entry_none(0x8B),
@@ -1602,86 +1666,77 @@ namespace instrad::x64
 		entry_none(0xA4), entry_none(0xA5), entry_none(0xA6), entry_none(0xA7),
 		entry_none(0xA8), entry_none(0xA9), entry_none(0xAA), entry_none(0xAB),
 		entry_none(0xAC), entry_none(0xAD), entry_none(0xAE), entry_none(0xAF),
-
-		// opcodes 0xB0 to 0xB7 are not prefixed
 		entry_none(0xB0), entry_none(0xB1), entry_none(0xB2), entry_none(0xB3),
 		entry_none(0xB4), entry_none(0xB5), entry_none(0xB6), entry_none(0xB7),
+		entry_none(0xB8), entry_none(0xB9), entry_none(0xBA), entry_none(0xBB),
+		entry_none(0xBC), entry_none(0xBD), entry_none(0xBE), entry_none(0xBF),
 
-		entry_none(0xB8),
-		entry_none(0xB9),
-		entry_none(0xBA),
-		entry_none(0xBB),
-		entry_none(0xBC),
-		entry_none(0xBD),
-		entry_none(0xBE),
-		entry_none(0xBF),
-
-		entry_none(0xC0),
-		entry_none(0xC1),
-		entry_none(0xC2),
+		entry_2(0xC0, ops::XADD, OpKind::RegMem8, OpKind::Reg8),
+		entry_2(0xC1, ops::XADD, OpKind::RegMem32, OpKind::Reg32),
+		entry_3(0xC2, ops::CMPPD, OpKind::RegXmm, OpKind::RegXmmMem128, OpKind::Imm8),
 		entry_none(0xC3),
-		entry_none(0xC4),
-		entry_none(0xC5),
-		entry_none(0xC6),
-		entry_none(0xC7),
+		entry_3(0xC4, ops::PINSRW, OpKind::RegXmm, OpKind::Reg32Mem16, OpKind::Imm8),
+		entry_3(0xC5, ops::PEXTRW, OpKind::Reg32, OpKind::RegXmm_Rm, OpKind::Imm8),
+		entry_3(0xC6, ops::SHUFPD, OpKind::RegXmm, OpKind::RegXmmMem128, OpKind::Imm8),
+		entry_ext(0xC7, &ModRMExt_0F_PrefixAny_C7[0]),
 
 		// opcodes 0xC8 to 0xCF are not prefixed
 		entry_none(0xC8), entry_none(0xC9), entry_none(0xCA), entry_none(0xCB),
 		entry_none(0xCC), entry_none(0xCD), entry_none(0xCE), entry_none(0xCF),
 
-		entry_none(0xD0),
-		entry_none(0xD1),
-		entry_none(0xD2),
-		entry_none(0xD3),
-		entry_none(0xD4),
-		entry_none(0xD5),
-		entry_none(0xD6),
-		entry_none(0xD7),
+		entry_2(0xD0, ops::ADDSUBPD, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xD1, ops::PSRLW, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xD2, ops::PSRLD, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xD3, ops::PSRLQ, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xD4, ops::PADDQ, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xD5, ops::PMULLW, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xD6, ops::MOVQ, OpKind::RegXmmMem64, OpKind::RegXmm),
+		entry_2(0xD7, ops::PMOVMSKB, OpKind::Reg32, OpKind::RegXmm_Rm),
 
-		entry_none(0xD8),
-		entry_none(0xD9),
-		entry_none(0xDA),
-		entry_none(0xDB),
-		entry_none(0xDC),
-		entry_none(0xDD),
-		entry_none(0xDE),
-		entry_none(0xDF),
+		entry_2(0xD8, ops::PSUBUSB, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xD9, ops::PSUBUSW, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xDA, ops::PMINUB, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xDB, ops::PAND, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xDC, ops::PADDUSB, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xDD, ops::PADDUSW, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xDE, ops::PMAXUB, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xDF, ops::PANDN, OpKind::RegXmm, OpKind::RegXmmMem128),
 
-		entry_none(0xE0),
-		entry_none(0xE1),
-		entry_none(0xE2),
-		entry_none(0xE3),
-		entry_none(0xE4),
-		entry_none(0xE5),
-		entry_none(0xE6),
-		entry_none(0xE7),
+		entry_2(0xE0, ops::PAVGB, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xE1, ops::PSRAW, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xE2, ops::PSRAD, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xE3, ops::PAVGW, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xE4, ops::PMULHUW, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xE5, ops::PMULHW, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xE6, ops::CVTTPD2DQ, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xE7, ops::MOVNTDQ, OpKind::Mem128, OpKind::RegXmm),
 
-		entry_none(0xE8),
-		entry_none(0xE9),
-		entry_none(0xEA),
-		entry_none(0xEB),
-		entry_none(0xEC),
-		entry_none(0xED),
-		entry_none(0xEE),
-		entry_none(0xEF),
+		entry_2(0xE8, ops::PSUBSB, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xE9, ops::PSUBSW, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xEA, ops::PMINSW, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xEB, ops::POR, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xEC, ops::PADDSB, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xED, ops::PADDSW, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xEE, ops::PMAXSW, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xEF, ops::PXOR, OpKind::RegXmm, OpKind::RegXmmMem128),
 
 		entry_none(0xF0),
-		entry_none(0xF1),
-		entry_none(0xF2),
-		entry_none(0xF3),
-		entry_none(0xF4),
-		entry_none(0xF5),
-		entry_none(0xF6),
-		entry_none(0xF7),
+		entry_2(0xF1, ops::PSLLW, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xF2, ops::PSLLD, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xF3, ops::PSLLQ, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xF4, ops::PMULUDQ, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xF5, ops::PMADDWD, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xF6, ops::PSADBW, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xF7, ops::MASKMOVDQU, OpKind::RegXmm, OpKind::RegXmm_Rm),
 
-		entry_none(0xF8),
-		entry_none(0xF9),
-		entry_none(0xFA),
-		entry_none(0xFB),
-		entry_none(0xFC),
-		entry_none(0xFD),
-		entry_none(0xFE),
-		entry_none(0xFF),
+		entry_2(0xF8, ops::PSUBB, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xF9, ops::PSUBW, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xFA, ops::PSUBD, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xFB, ops::PSUBQ, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xFC, ops::PADDB, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xFD, ops::PADDW, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0xFE, ops::PADDD, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_0(0xFF, ops::UD0),
 	};
 
 
@@ -1692,9 +1747,9 @@ namespace instrad::x64
 		entry_none(0x08), entry_none(0x09), entry_none(0x0A), entry_none(0x0B),
 		entry_none(0x0C), entry_none(0x0D), entry_none(0x0E), entry_none(0x0F),
 
-		entry_none(0x10),
-		entry_none(0x11),
-		entry_none(0x12),
+		entry_2(0x10, ops::MOVSD, OpKind::RegXmm, OpKind::RegXmmMem64),
+		entry_2(0x11, ops::MOVSD, OpKind::RegXmmMem128, OpKind::RegXmm),
+		entry_2(0x12, ops::MOVDDUP, OpKind::RegXmm, OpKind::RegXmmMem64),
 		entry_none(0x13),
 		entry_none(0x14),
 		entry_none(0x15),
@@ -1709,10 +1764,10 @@ namespace instrad::x64
 
 		entry_none(0x28),
 		entry_none(0x29),
-		entry_none(0x2A),
-		entry_none(0x2B),
-		entry_none(0x2C),
-		entry_none(0x2D),
+		entry_2(0x2A, ops::CVTSI2SD, OpKind::RegXmm, OpKind::RegMem32),
+		entry_2(0x2B, ops::MOVNTSD, OpKind::Mem64, OpKind::RegXmm),
+		entry_2(0x2C, ops::CVTTSD2SI, OpKind::Reg32, OpKind::RegXmmMem64),
+		entry_2(0x2D, ops::CVTSD2SI, OpKind::Reg32, OpKind::RegXmmMem64),
 		entry_none(0x2E),
 		entry_none(0x2F),
 
@@ -1727,7 +1782,7 @@ namespace instrad::x64
 		entry_none(0x4C), entry_none(0x4D), entry_none(0x4E), entry_none(0x4F),
 
 		entry_none(0x50),
-		entry_none(0x51),
+		entry_2(0x51, ops::SQRTSD, OpKind::RegXmm, OpKind::RegXmmMem64),
 		entry_none(0x52),
 		entry_none(0x53),
 		entry_none(0x54),
@@ -1735,34 +1790,22 @@ namespace instrad::x64
 		entry_none(0x56),
 		entry_none(0x57),
 
-		entry_none(0x58),
-		entry_none(0x59),
-		entry_none(0x5A),
+		entry_2(0x58, ops::ADDSD, OpKind::RegXmm, OpKind::RegXmmMem64),
+		entry_2(0x59, ops::MULSD, OpKind::RegXmm, OpKind::RegXmmMem64),
+		entry_2(0x5A, ops::CVTSD2SS, OpKind::RegXmm, OpKind::RegXmmMem64),
 		entry_none(0x5B),
-		entry_none(0x5C),
-		entry_none(0x5D),
-		entry_none(0x5E),
-		entry_none(0x5F),
+		entry_2(0x5C, ops::SUBSD, OpKind::RegXmm, OpKind::RegXmmMem64),
+		entry_2(0x5D, ops::MINSD, OpKind::RegXmm, OpKind::RegXmmMem64),
+		entry_2(0x5E, ops::DIVSD, OpKind::RegXmm, OpKind::RegXmmMem64),
+		entry_2(0x5F, ops::MAXSD, OpKind::RegXmm, OpKind::RegXmmMem64),
 
-		entry_none(0x60),
-		entry_none(0x61),
-		entry_none(0x62),
-		entry_none(0x63),
-		entry_none(0x64),
-		entry_none(0x65),
-		entry_none(0x66),
-		entry_none(0x67),
+		// nothing for 0xF2 here
+		entry_none(0x60), entry_none(0x61), entry_none(0x62), entry_none(0x63),
+		entry_none(0x64), entry_none(0x65), entry_none(0x66), entry_none(0x67),
+		entry_none(0x68), entry_none(0x69), entry_none(0x6A), entry_none(0x6B),
+		entry_none(0x6C), entry_none(0x6D), entry_none(0x6E), entry_none(0x6F),
 
-		entry_none(0x68),
-		entry_none(0x69),
-		entry_none(0x6A),
-		entry_none(0x6B),
-		entry_none(0x6C),
-		entry_none(0x6D),
-		entry_none(0x6E),
-		entry_none(0x6F),
-
-		entry_none(0x70),
+		entry_3(0x70, ops::PSHUFLW, OpKind::RegXmm, OpKind::RegXmmMem128, OpKind::Imm8),
 		entry_none(0x71),
 		entry_none(0x72),
 		entry_none(0x73),
@@ -1771,14 +1814,165 @@ namespace instrad::x64
 		entry_none(0x76),
 		entry_none(0x77),
 
-		entry_none(0x78),
-		entry_none(0x79),
+		entry_4(0x78, ops::INSERTQ, OpKind::RegXmm, OpKind::RegXmm_Rm, OpKind::Imm8, OpKind::Imm8),
+		entry_2(0x79, ops::INSERTQ, OpKind::RegXmm, OpKind::RegXmm_Rm),
 		entry_none(0x7A),
 		entry_none(0x7B),
-		entry_none(0x7C),
-		entry_none(0x7D),
+		entry_2(0x7C, ops::HADDPS, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x7D, ops::HSUBPS, OpKind::RegXmm, OpKind::RegXmmMem128),
 		entry_none(0x7E),
 		entry_none(0x7F),
+
+		// opcodes 0x80 to 0xBF are not prefixed, or have no opcodes for the 0xF2 prefix
+		entry_none(0x80), entry_none(0x81), entry_none(0x82), entry_none(0x83),
+		entry_none(0x84), entry_none(0x85), entry_none(0x86), entry_none(0x87),
+		entry_none(0x88), entry_none(0x89), entry_none(0x8A), entry_none(0x8B),
+		entry_none(0x8C), entry_none(0x8D), entry_none(0x8E), entry_none(0x8F),
+		entry_none(0x90), entry_none(0x91), entry_none(0x92), entry_none(0x93),
+		entry_none(0x94), entry_none(0x95), entry_none(0x96), entry_none(0x97),
+		entry_none(0x98), entry_none(0x99), entry_none(0x9A), entry_none(0x9B),
+		entry_none(0x9C), entry_none(0x9D), entry_none(0x9E), entry_none(0x9F),
+		entry_none(0xA0), entry_none(0xA1), entry_none(0xA2), entry_none(0xA3),
+		entry_none(0xA4), entry_none(0xA5), entry_none(0xA6), entry_none(0xA7),
+		entry_none(0xA8), entry_none(0xA9), entry_none(0xAA), entry_none(0xAB),
+		entry_none(0xAC), entry_none(0xAD), entry_none(0xAE), entry_none(0xAF),
+		entry_none(0xB0), entry_none(0xB1), entry_none(0xB2), entry_none(0xB3),
+		entry_none(0xB4), entry_none(0xB5), entry_none(0xB6), entry_none(0xB7),
+		entry_none(0xB8), entry_none(0xB9), entry_none(0xBA), entry_none(0xBB),
+		entry_none(0xBC), entry_none(0xBD), entry_none(0xBE), entry_none(0xBF),
+
+		entry_2(0xC0, ops::XADD, OpKind::RegMem8, OpKind::Reg8),
+		entry_2(0xC1, ops::XADD, OpKind::RegMem32, OpKind::Reg32),
+		entry_3(0xC2, ops::CMPSD, OpKind::RegXmm, OpKind::RegXmmMem64, OpKind::Imm8),
+		entry_none(0xC3),
+		entry_none(0xC4),
+		entry_none(0xC5),
+		entry_none(0xC6),
+		entry_ext(0xC7, &ModRMExt_0F_PrefixAny_C7[0]),
+
+		// opcodes 0xC8 to 0xCF are not prefixed
+		entry_none(0xC8), entry_none(0xC9), entry_none(0xCA), entry_none(0xCB),
+		entry_none(0xCC), entry_none(0xCD), entry_none(0xCE), entry_none(0xCF),
+
+		entry_2(0xD0, ops::ADDSUBPS, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_none(0xD1),
+		entry_none(0xD2),
+		entry_none(0xD3),
+		entry_none(0xD4),
+		entry_none(0xD5),
+		entry_2(0xD6, ops::MOVDQ2Q, OpKind::RegMmx, OpKind::RegXmm_Rm),
+		entry_none(0xD7),
+
+		// nothing for 0xF2 here
+		entry_none(0xD8), entry_none(0xD9), entry_none(0xDA), entry_none(0xDB),
+		entry_none(0xDC), entry_none(0xDD), entry_none(0xDE), entry_none(0xDF),
+
+		entry_none(0xE0),
+		entry_none(0xE1),
+		entry_none(0xE2),
+		entry_none(0xE3),
+		entry_none(0xE4),
+		entry_none(0xE5),
+		entry_2(0xE6, ops::CVTPD2DQ, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_none(0xE7),
+
+		// nothing for 0xF2 here
+		entry_none(0xE8), entry_none(0xE9), entry_none(0xEA), entry_none(0xEB),
+		entry_none(0xEC), entry_none(0xED), entry_none(0xEE), entry_none(0xEF),
+
+		entry_none(0xF0),
+		entry_none(0xF1),
+		entry_2(0xF2, ops::LDDQU, OpKind::RegXmm, OpKind::Mem128),
+		entry_none(0xF3),
+		entry_none(0xF4),
+		entry_none(0xF5),
+		entry_none(0xF6),
+		entry_none(0xF7),
+
+		// nothing for 0xF2 here
+		entry_none(0xF8), entry_none(0xF9), entry_none(0xFA), entry_none(0xFB),
+		entry_none(0xFC), entry_none(0xFD), entry_none(0xFE),
+
+		entry_0(0xFF, ops::UD0),
+	};
+
+
+	constexpr TableEntry SecondaryOpcodeMap_F0_Prefix_F3[] = {
+		// opcodes 0x00 to 0x0F are not prefixed
+		entry_none(0x00), entry_none(0x01), entry_none(0x02), entry_none(0x03),
+		entry_none(0x04), entry_none(0x05), entry_none(0x06), entry_none(0x07),
+		entry_none(0x08), entry_none(0x09), entry_none(0x0A), entry_none(0x0B),
+		entry_none(0x0C), entry_none(0x0D), entry_none(0x0E), entry_none(0x0F),
+
+		entry_2(0x10, ops::MOVSS, OpKind::RegXmm, OpKind::RegXmmMem32),
+		entry_2(0x11, ops::MOVSS, OpKind::RegXmmMem32, OpKind::RegXmm),
+		entry_2(0x12, ops::MOVSLDUP, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_none(0x13),
+		entry_none(0x14),
+		entry_none(0x15),
+		entry_2(0x16, ops::MOVSHDUP, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_none(0x17),
+
+		// opcodes 0x18 to 0x27 are not prefixed
+		entry_none(0x18), entry_none(0x19), entry_none(0x1A), entry_none(0x1B),
+		entry_none(0x1C), entry_none(0x1D), entry_none(0x1E), entry_none(0x1F),
+		entry_none(0x20), entry_none(0x21), entry_none(0x22), entry_none(0x23),
+		entry_none(0x24), entry_none(0x25), entry_none(0x26), entry_none(0x27),
+
+		entry_none(0x28),
+		entry_none(0x29),
+		entry_2(0x2A, ops::CVTSI2SS, OpKind::RegXmm, OpKind::RegMem32),
+		entry_2(0x2B, ops::MOVNTSS, OpKind::Mem32, OpKind::RegXmm),
+		entry_2(0x2C, ops::CVTTSS2SI, OpKind::Reg32, OpKind::RegXmmMem32),
+		entry_2(0x2D, ops::CVTSS2SI, OpKind::Reg32, OpKind::RegXmmMem32),
+		entry_none(0x2E),
+		entry_none(0x2F),
+
+		// opcodes 0x30 to 0x4F are not prefixed
+		entry_none(0x30), entry_none(0x31), entry_none(0x32), entry_none(0x33),
+		entry_none(0x34), entry_none(0x35), entry_none(0x36), entry_none(0x37),
+		entry_none(0x38), entry_none(0x39), entry_none(0x3A), entry_none(0x3B),
+		entry_none(0x3C), entry_none(0x3D), entry_none(0x3E), entry_none(0x3F),
+		entry_none(0x40), entry_none(0x41), entry_none(0x42), entry_none(0x43),
+		entry_none(0x44), entry_none(0x45), entry_none(0x46), entry_none(0x47),
+		entry_none(0x48), entry_none(0x49), entry_none(0x4A), entry_none(0x4B),
+		entry_none(0x4C), entry_none(0x4D), entry_none(0x4E), entry_none(0x4F),
+
+		entry_none(0x50),
+		entry_2(0x51, ops::SQRTSS, OpKind::RegXmm, OpKind::RegXmmMem32),
+		entry_2(0x52, ops::RSQRTSS, OpKind::RegXmm, OpKind::RegXmmMem32),
+		entry_2(0x53, ops::RCPSS, OpKind::RegXmm, OpKind::RegXmmMem32),
+		entry_none(0x54),
+		entry_none(0x55),
+		entry_none(0x56),
+		entry_none(0x57),
+
+		entry_2(0x58, ops::ADDSS, OpKind::RegXmm, OpKind::RegXmmMem32),
+		entry_2(0x59, ops::MULSS, OpKind::RegXmm, OpKind::RegXmmMem32),
+		entry_2(0x5A, ops::CVTSS2SD, OpKind::RegXmm, OpKind::RegXmmMem32),
+		entry_2(0x5B, ops::CVTTPS2DQ, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x5C, ops::SUBSS, OpKind::RegXmm, OpKind::RegXmmMem32),
+		entry_2(0x5D, ops::MINSS, OpKind::RegXmm, OpKind::RegXmmMem32),
+		entry_2(0x5E, ops::DIVSS, OpKind::RegXmm, OpKind::RegXmmMem32),
+		entry_2(0x5F, ops::MAXSS, OpKind::RegXmm, OpKind::RegXmmMem32),
+
+		// nothing for 0xF3 here
+		entry_none(0x60), entry_none(0x61), entry_none(0x62), entry_none(0x63),
+		entry_none(0x64), entry_none(0x65), entry_none(0x66), entry_none(0x67),
+		entry_none(0x68), entry_none(0x69), entry_none(0x6A), entry_none(0x6B),
+		entry_none(0x6C), entry_none(0x6D), entry_none(0x6E),
+
+		entry_2(0x6F, ops::MOVDQU, OpKind::RegXmm, OpKind::RegXmmMem128),
+
+		entry_3(0x70, ops::PSHUFHW, OpKind::RegXmm, OpKind::RegXmmMem128, OpKind::Imm8),
+
+		entry_none(0x71), entry_none(0x72), entry_none(0x73),
+		entry_none(0x74), entry_none(0x75), entry_none(0x76), entry_none(0x77),
+		entry_none(0x78), entry_none(0x79), entry_none(0x7A), entry_none(0x7B),
+		entry_none(0x7C), entry_none(0x7D),
+
+		entry_2(0x7E, ops::MOVQ, OpKind::RegXmm, OpKind::RegXmmMem64),
+		entry_2(0x7F, ops::MOVDQU, OpKind::RegXmmMem128, OpKind::RegXmm),
 
 		// opcodes 0x80 to 0xAF are not prefixed
 		entry_none(0x80), entry_none(0x81), entry_none(0x82), entry_none(0x83),
@@ -1792,203 +1986,8 @@ namespace instrad::x64
 		entry_none(0xA0), entry_none(0xA1), entry_none(0xA2), entry_none(0xA3),
 		entry_none(0xA4), entry_none(0xA5), entry_none(0xA6), entry_none(0xA7),
 		entry_none(0xA8), entry_none(0xA9), entry_none(0xAA), entry_none(0xAB),
-		entry_none(0xAC), entry_none(0xAD), entry_none(0xAE), entry_none(0xAF),
+		entry_none(0xAC), entry_none(0xAD),
 
-		// opcodes 0xB0 to 0xB7 are not prefixed
-		entry_none(0xB0), entry_none(0xB1), entry_none(0xB2), entry_none(0xB3),
-		entry_none(0xB4), entry_none(0xB5), entry_none(0xB6), entry_none(0xB7),
-
-		entry_none(0xB8),
-		entry_none(0xB9),
-		entry_none(0xBA),
-		entry_none(0xBB),
-		entry_none(0xBC),
-		entry_none(0xBD),
-		entry_none(0xBE),
-		entry_none(0xBF),
-
-		entry_none(0xC0),
-		entry_none(0xC1),
-		entry_none(0xC2),
-		entry_none(0xC3),
-		entry_none(0xC4),
-		entry_none(0xC5),
-		entry_none(0xC6),
-		entry_none(0xC7),
-
-		// opcodes 0xC8 to 0xCF are not prefixed
-		entry_none(0xC8), entry_none(0xC9), entry_none(0xCA), entry_none(0xCB),
-		entry_none(0xCC), entry_none(0xCD), entry_none(0xCE), entry_none(0xCF),
-
-		entry_none(0xD0),
-		entry_none(0xD1),
-		entry_none(0xD2),
-		entry_none(0xD3),
-		entry_none(0xD4),
-		entry_none(0xD5),
-		entry_none(0xD6),
-		entry_none(0xD7),
-
-		entry_none(0xD8),
-		entry_none(0xD9),
-		entry_none(0xDA),
-		entry_none(0xDB),
-		entry_none(0xDC),
-		entry_none(0xDD),
-		entry_none(0xDE),
-		entry_none(0xDF),
-
-		entry_none(0xE0),
-		entry_none(0xE1),
-		entry_none(0xE2),
-		entry_none(0xE3),
-		entry_none(0xE4),
-		entry_none(0xE5),
-		entry_none(0xE6),
-		entry_none(0xE7),
-
-		entry_none(0xE8),
-		entry_none(0xE9),
-		entry_none(0xEA),
-		entry_none(0xEB),
-		entry_none(0xEC),
-		entry_none(0xED),
-		entry_none(0xEE),
-		entry_none(0xEF),
-
-		entry_none(0xF0),
-		entry_none(0xF1),
-		entry_none(0xF2),
-		entry_none(0xF3),
-		entry_none(0xF4),
-		entry_none(0xF5),
-		entry_none(0xF6),
-		entry_none(0xF7),
-
-		entry_none(0xF8),
-		entry_none(0xF9),
-		entry_none(0xFA),
-		entry_none(0xFB),
-		entry_none(0xFC),
-		entry_none(0xFD),
-		entry_none(0xFE),
-		entry_none(0xFF),
-	};
-
-
-	constexpr TableEntry SecondaryOpcodeMap_F0_Prefix_F3[] = {
-		// opcodes 0x00 to 0x0F are not prefixed
-		entry_none(0x00), entry_none(0x01), entry_none(0x02), entry_none(0x03),
-		entry_none(0x04), entry_none(0x05), entry_none(0x06), entry_none(0x07),
-		entry_none(0x08), entry_none(0x09), entry_none(0x0A), entry_none(0x0B),
-		entry_none(0x0C), entry_none(0x0D), entry_none(0x0E), entry_none(0x0F),
-
-		entry_none(0x10),
-		entry_none(0x11),
-		entry_none(0x12),
-		entry_none(0x13),
-		entry_none(0x14),
-		entry_none(0x15),
-		entry_none(0x16),
-		entry_none(0x17),
-
-		// opcodes 0x18 to 0x27 are not prefixed
-		entry_none(0x18), entry_none(0x19), entry_none(0x1A), entry_none(0x1B),
-		entry_none(0x1C), entry_none(0x1D), entry_none(0x1E), entry_none(0x1F),
-		entry_none(0x20), entry_none(0x21), entry_none(0x22), entry_none(0x23),
-		entry_none(0x24), entry_none(0x25), entry_none(0x26), entry_none(0x27),
-
-		entry_none(0x28),
-		entry_none(0x29),
-		entry_none(0x2A),
-		entry_none(0x2B),
-		entry_none(0x2C),
-		entry_none(0x2D),
-		entry_none(0x2E),
-		entry_none(0x2F),
-
-		// opcodes 0x30 to 0x4F are not prefixed
-		entry_none(0x30), entry_none(0x31), entry_none(0x32), entry_none(0x33),
-		entry_none(0x34), entry_none(0x35), entry_none(0x36), entry_none(0x37),
-		entry_none(0x38), entry_none(0x39), entry_none(0x3A), entry_none(0x3B),
-		entry_none(0x3C), entry_none(0x3D), entry_none(0x3E), entry_none(0x3F),
-		entry_none(0x40), entry_none(0x41), entry_none(0x42), entry_none(0x43),
-		entry_none(0x44), entry_none(0x45), entry_none(0x46), entry_none(0x47),
-		entry_none(0x48), entry_none(0x49), entry_none(0x4A), entry_none(0x4B),
-		entry_none(0x4C), entry_none(0x4D), entry_none(0x4E), entry_none(0x4F),
-
-		entry_none(0x50),
-		entry_none(0x51),
-		entry_none(0x52),
-		entry_none(0x53),
-		entry_none(0x54),
-		entry_none(0x55),
-		entry_none(0x56),
-		entry_none(0x57),
-
-		entry_none(0x58),
-		entry_none(0x59),
-		entry_none(0x5A),
-		entry_none(0x5B),
-		entry_none(0x5C),
-		entry_none(0x5D),
-		entry_none(0x5E),
-		entry_none(0x5F),
-
-		entry_none(0x60),
-		entry_none(0x61),
-		entry_none(0x62),
-		entry_none(0x63),
-		entry_none(0x64),
-		entry_none(0x65),
-		entry_none(0x66),
-		entry_none(0x67),
-
-		entry_none(0x68),
-		entry_none(0x69),
-		entry_none(0x6A),
-		entry_none(0x6B),
-		entry_none(0x6C),
-		entry_none(0x6D),
-		entry_none(0x6E),
-		entry_none(0x6F),
-
-		entry_none(0x70),
-		entry_none(0x71),
-		entry_none(0x72),
-		entry_none(0x73),
-		entry_none(0x74),
-		entry_none(0x75),
-		entry_none(0x76),
-		entry_none(0x77),
-
-		entry_none(0x78),
-		entry_none(0x79),
-		entry_none(0x7A),
-		entry_none(0x7B),
-		entry_none(0x7C),
-		entry_none(0x7D),
-		entry_none(0x7E),
-		entry_none(0x7F),
-
-		// opcodes 0x80 to 0xAF are not prefixed
-		entry_none(0x80), entry_none(0x81), entry_none(0x82), entry_none(0x83),
-		entry_none(0x84), entry_none(0x85), entry_none(0x86), entry_none(0x87),
-		entry_none(0x88), entry_none(0x89), entry_none(0x8A), entry_none(0x8B),
-		entry_none(0x8C), entry_none(0x8D), entry_none(0x8E), entry_none(0x8F),
-		entry_none(0x90), entry_none(0x91), entry_none(0x92), entry_none(0x93),
-		entry_none(0x94), entry_none(0x95), entry_none(0x96), entry_none(0x97),
-		entry_none(0x98), entry_none(0x99), entry_none(0x9A), entry_none(0x9B),
-		entry_none(0x9C), entry_none(0x9D), entry_none(0x9E), entry_none(0x9F),
-		entry_none(0xA0), entry_none(0xA1), entry_none(0xA2), entry_none(0xA3),
-		entry_none(0xA4), entry_none(0xA5), entry_none(0xA6), entry_none(0xA7),
-
-		entry_none(0xA8),
-		entry_none(0xA9),
-		entry_none(0xAA),
-		entry_none(0xAB),
-		entry_none(0xAC),
-		entry_none(0xAD),
 		entry_ext(0xAE, &ModRMExt_0F_AE_Prefix_F3[0]),
 		entry_none(0xAF),
 
@@ -1996,81 +1995,49 @@ namespace instrad::x64
 		entry_none(0xB0), entry_none(0xB1), entry_none(0xB2), entry_none(0xB3),
 		entry_none(0xB4), entry_none(0xB5), entry_none(0xB6), entry_none(0xB7),
 
-		entry_none(0xB8),
+		entry_2(0xB8, ops::POPCNT, OpKind::Reg32, OpKind::RegMem32),
 		entry_none(0xB9),
 		entry_none(0xBA),
 		entry_none(0xBB),
-		entry_none(0xBC),
-		entry_none(0xBD),
+		entry_2(0xBC, ops::TZCNT, OpKind::Reg32, OpKind::RegMem32),
+		entry_2(0xBD, ops::LZCNT, OpKind::Reg32, OpKind::RegMem32),
 		entry_none(0xBE),
 		entry_none(0xBF),
 
-		entry_none(0xC0),
-		entry_none(0xC1),
-		entry_none(0xC2),
+		entry_2(0xC0, ops::XADD, OpKind::RegMem8, OpKind::Reg8),
+		entry_2(0xC1, ops::XADD, OpKind::RegMem32, OpKind::Reg32),
+		entry_3(0xC2, ops::CMPSS, OpKind::RegXmm, OpKind::RegXmmMem32, OpKind::Imm8),
 		entry_none(0xC3),
 		entry_none(0xC4),
 		entry_none(0xC5),
 		entry_none(0xC6),
-		entry_none(0xC7),
+		entry_ext(0xC7, &ModRMExt_0F_PrefixAny_C7[0]),
 
-		// opcodes 0xC8 to 0xCF are not prefixed
 		entry_none(0xC8), entry_none(0xC9), entry_none(0xCA), entry_none(0xCB),
 		entry_none(0xCC), entry_none(0xCD), entry_none(0xCE), entry_none(0xCF),
+		entry_none(0xD0), entry_none(0xD1), entry_none(0xD2), entry_none(0xD3),
+		entry_none(0xD4), entry_none(0xD5),
 
-		entry_none(0xD0),
-		entry_none(0xD1),
-		entry_none(0xD2),
-		entry_none(0xD3),
-		entry_none(0xD4),
-		entry_none(0xD5),
-		entry_none(0xD6),
+		entry_2(0xD6, ops::MOVQ2DQ, OpKind::RegXmm, OpKind::RegMmx_Rm),
 		entry_none(0xD7),
 
-		entry_none(0xD8),
-		entry_none(0xD9),
-		entry_none(0xDA),
-		entry_none(0xDB),
-		entry_none(0xDC),
-		entry_none(0xDD),
-		entry_none(0xDE),
-		entry_none(0xDF),
+		entry_none(0xD8), entry_none(0xD9), entry_none(0xDA), entry_none(0xDB),
+		entry_none(0xDC), entry_none(0xDD), entry_none(0xDE), entry_none(0xDF),
 
-		entry_none(0xE0),
-		entry_none(0xE1),
-		entry_none(0xE2),
-		entry_none(0xE3),
-		entry_none(0xE4),
-		entry_none(0xE5),
-		entry_none(0xE6),
+		entry_none(0xE0), entry_none(0xE1), entry_none(0xE2), entry_none(0xE3),
+		entry_none(0xE4), entry_none(0xE5),
+
+		entry_2(0xE6, ops::CVTDQ2PD, OpKind::RegXmm, OpKind::RegXmmMem64),
 		entry_none(0xE7),
 
-		entry_none(0xE8),
-		entry_none(0xE9),
-		entry_none(0xEA),
-		entry_none(0xEB),
-		entry_none(0xEC),
-		entry_none(0xED),
-		entry_none(0xEE),
-		entry_none(0xEF),
+		entry_none(0xE8), entry_none(0xE9), entry_none(0xEA), entry_none(0xEB),
+		entry_none(0xEC), entry_none(0xED), entry_none(0xEE), entry_none(0xEF),
+		entry_none(0xF0), entry_none(0xF1), entry_none(0xF2), entry_none(0xF3),
+		entry_none(0xF4), entry_none(0xF5), entry_none(0xF6), entry_none(0xF7),
+		entry_none(0xF8), entry_none(0xF9), entry_none(0xFA), entry_none(0xFB),
+		entry_none(0xFC), entry_none(0xFD), entry_none(0xFE),
 
-		entry_none(0xF0),
-		entry_none(0xF1),
-		entry_none(0xF2),
-		entry_none(0xF3),
-		entry_none(0xF4),
-		entry_none(0xF5),
-		entry_none(0xF6),
-		entry_none(0xF7),
-
-		entry_none(0xF8),
-		entry_none(0xF9),
-		entry_none(0xFA),
-		entry_none(0xFB),
-		entry_none(0xFC),
-		entry_none(0xFD),
-		entry_none(0xFE),
-		entry_none(0xFF),
+		entry_0(0xFF, ops::UD0),
 	};
 
 	static_assert(ArrayLength(SecondaryOpcodeMap_F0_Normal) == 256, "table invalid");

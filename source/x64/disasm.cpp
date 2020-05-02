@@ -2,7 +2,6 @@
 // Copyright (c) 2020, zhiayang
 // Licensed under the Apache License Version 2.0.
 
-#include "disasm.h"
 #include "x64/x64.h"
 
 #include <stdio.h>
@@ -140,7 +139,7 @@ namespace instrad::x64
 					return regs::EAX;
 			}
 
-
+			// the index for these special registers is always in modRM.rm
 			case OpKind::SegmentReg:   return getSegmentRegister(mods);
 			case OpKind::ControlReg:   return getControlRegister(mods);
 			case OpKind::DebugReg:     return getDebugRegister(mods);
