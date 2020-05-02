@@ -31,32 +31,39 @@ namespace instrad::x64
 		{
 			// byte-sized things are not promoted
 			case OpKind::Reg8:
-				return getRegisterFromModRM(buf, /* byte; */ true, mods);
+				return getRegisterOperand(buf, /* byte; */ true, mods);
 
 			case OpKind::Reg64: mods.default64BitRegister = true; [[fallthrough]];
 			case OpKind::Reg16:
 			case OpKind::Reg32:
-				return getRegisterFromModRM(buf, /* byte: */ false, mods);
+				return getRegisterOperand(buf, /* byte: */ false, mods);
 
+			case OpKind::Reg8_Rm:
+				return getRegisterOperandFromModRM(buf, /* byte: */ true, mods);
+
+			case OpKind::Reg64_Rm: mods.default64BitRegister = true; [[fallthrough]];
+			case OpKind::Reg16_Rm:
+			case OpKind::Reg32_Rm:
+				return getRegisterOperandFromModRM(buf, /* byte: */ false, mods);
 
 
 			case OpKind::RegMem8:
-				return getRegisterOrMemoryFromModRM(buf, /* byte; */ true, mods);
+				return getRegisterOrMemoryOperand(buf, /* byte; */ true, mods);
 
 			case OpKind::RegMem64: mods.default64BitRegister = true; [[fallthrough]];
 			case OpKind::RegMem16:
 			case OpKind::RegMem32:
-				return getRegisterOrMemoryFromModRM(buf, /* byte; */ false, mods);
+				return getRegisterOrMemoryOperand(buf, /* byte; */ false, mods);
 
 
 			case OpKind::Mem8:
 			case OpKind::Mem16:
 			case OpKind::Mem32:
 			case OpKind::Mem64:
-				return getMemoryFromModRM(buf, /* byte: */ kind == OpKind::Mem8, mods);
+				return getMemoryOperand(buf, /* byte: */ kind == OpKind::Mem8, mods);
 
-			case OpKind::Mem128:    return getMemoryFromModRM(buf, /* byte: */ false, mods, /* bits: */ 128);
-			case OpKind::Mem256:    return getMemoryFromModRM(buf, /* byte: */ false, mods, /* bits: */ 256);
+			case OpKind::Mem128:    return getMemoryOperand(buf, /* byte: */ false, mods, /* bits: */ 128);
+			case OpKind::Mem256:    return getMemoryOperand(buf, /* byte: */ false, mods, /* bits: */ 256);
 
 
 			case OpKind::Imm8:
@@ -107,7 +114,7 @@ namespace instrad::x64
 			}
 
 			case OpKind::Memory:
-				return getMemoryFromModRM(buf, /* byte: */ false, mods);
+				return getMemoryOperand(buf, /* byte: */ false, mods);
 
 			case OpKind::ImplicitCS:   return regs::CS;
 			case OpKind::ImplicitDS:   return regs::DS;
@@ -153,14 +160,31 @@ namespace instrad::x64
 					return MemoryRef(bits, (uint64_t) readSignedImm64(buf)).setSegment(seg);
 			}
 
-			case OpKind::MmxReg:
-			case OpKind::MmxRegMem64:
+			// this is damn dumb
+			case OpKind::Reg32Mem16: {
+				auto ret = getRegisterOrMemoryOperand(buf, /* byte: */ false, mods);
+				if(ret.isMemory())
+					ret.mem().setBits(16);
 
-			case OpKind::XmmReg:
-			case OpKind::XmmRegMem128:
+				return ret;
+			}
 
-			case OpKind::YmmReg:
-			case OpKind::YmmRegMem256:
+
+			case OpKind::RegMmx_Rm:
+			case OpKind::RegXmm_Rm:
+
+			case OpKind::RegMmx:
+			case OpKind::RegMmxMem32:
+			case OpKind::RegMmxMem64:
+
+			case OpKind::RegXmm:
+			case OpKind::RegXmmMem32:
+			case OpKind::RegXmmMem64:
+			case OpKind::RegXmmMem128:
+
+			case OpKind::RegYmm:
+			case OpKind::RegYmmMem256:
+
 
 			case OpKind::Ptr16_16:
 			case OpKind::Ptr16_32:
@@ -217,6 +241,12 @@ namespace instrad::x64
 					else
 						entry = ext[1];
 				}
+			}
+			else if(entry.extensionUsesRexWBit())
+			{
+				// if !rex.W, then use the first entry; if rex.W, use the second.
+				if(mods.rex.W)  entry = ext[1];
+				else            entry = ext[0];
 			}
 			else
 			{

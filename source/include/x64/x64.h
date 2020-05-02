@@ -76,6 +76,9 @@ namespace instrad::x64
 		constexpr const Register& reg() const { return this->m_reg; }
 		constexpr uint64_t imm() const { return this->m_imm; }
 
+		constexpr MemoryRef& mem() { return this->m_mem; }
+		constexpr Register& reg() { return this->m_reg; }
+
 		constexpr int immediateSize() const { return this->m_immbits; }
 
 	private:
@@ -258,184 +261,115 @@ namespace instrad::x64
 
 	constexpr Register getSegmentRegister(const InstrModifiers& mods)
 	{
-		switch(mods.modrm.reg)
-		{
-			case 0:     return regs::ES;
-			case 1:     return regs::CS;
-			case 2:     return regs::SS;
-			case 3:     return regs::DS;
-			case 4:     return regs::FS;
-			case 5:     return regs::GS;
-			default:    return regs::INVALID;
-		}
+		constexpr Register table[] = { regs::ES, regs::CS, regs::SS, regs::DS, regs::FS, regs::GS };
+		if(mods.modrm.reg > 5)
+			return regs::INVALID;
+
+		return table[mods.modrm.reg];
 	}
 
 	constexpr Register getControlRegister(const InstrModifiers& mods)
 	{
-		switch(mods.modrm.reg | (mods.rex.R << 3))
-		{
-			case 0:     return regs::CR0;
-			case 1:     return regs::CR1;
-			case 2:     return regs::CR2;
-			case 3:     return regs::CR3;
-			case 4:     return regs::CR4;
-			case 5:     return regs::CR5;
-			case 6:     return regs::CR6;
-			case 7:     return regs::CR7;
-			case 8:     return regs::CR8;
-			case 9:     return regs::CR9;
-			case 10:    return regs::CR10;
-			case 11:    return regs::CR11;
-			case 12:    return regs::CR12;
-			case 13:    return regs::CR13;
-			case 14:    return regs::CR14;
-			case 15:    return regs::CR15;
-			default:    return regs::INVALID;
-		}
+		constexpr Register table[] = {
+			regs::CR0, regs::CR1, regs::CR2, regs::CR3, regs::CR4, regs::CR5, regs::CR6, regs::CR7,
+			regs::CR8, regs::CR9, regs::CR10, regs::CR11, regs::CR12, regs::CR13, regs::CR14, regs::CR15
+		};
+
+		auto idx = mods.modrm.reg | (mods.rex.R << 3);
+		if(idx > 15)
+			return regs::INVALID;
+
+		return table[idx];
 	}
 
 	constexpr Register getDebugRegister(const InstrModifiers& mods)
 	{
-		switch(mods.modrm.reg | (mods.rex.R << 3))
-		{
-			case 0:     return regs::DR0;
-			case 1:     return regs::DR1;
-			case 2:     return regs::DR2;
-			case 3:     return regs::DR3;
-			case 4:     return regs::DR4;
-			case 5:     return regs::DR5;
-			case 6:     return regs::DR6;
-			case 7:     return regs::DR7;
-			case 8:     return regs::DR8;
-			case 9:     return regs::DR9;
-			case 10:    return regs::DR10;
-			case 11:    return regs::DR11;
-			case 12:    return regs::DR12;
-			case 13:    return regs::DR13;
-			case 14:    return regs::DR14;
-			case 15:    return regs::DR15;
-			default:    return regs::INVALID;
-		}
+		constexpr Register table[] = {
+			regs::DR0, regs::DR1, regs::DR2, regs::DR3, regs::DR4, regs::DR5, regs::DR6, regs::DR7,
+			regs::DR8, regs::DR9, regs::DR10, regs::DR11, regs::DR12, regs::DR13, regs::DR14, regs::DR15
+		};
+
+		auto idx = mods.modrm.reg | (mods.rex.R << 3);
+		if(idx > 15)
+			return regs::INVALID;
+
+		return table[idx];
 	}
 
 	constexpr Register decodeRegisterNumber(bool isByteMode, const InstrModifiers& mods, int index)
 	{
+		constexpr Register table_legacy_8[] = {
+			regs::AL, regs::CL, regs::DL, regs::BL, regs::AH, regs::CH, regs::DH, regs::BH
+		};
+
+		constexpr Register table_8[] = {
+			regs::AL, regs::CL, regs::DL, regs::BL, regs::SPL, regs::BPL, regs::SIL, regs::DIL,
+			regs::R8B, regs::R9B, regs::R10B, regs::R11B, regs::R12B, regs::R13B, regs::R14B, regs::R15B
+		};
+
+		constexpr Register table_16[] = {
+			regs::AX, regs::CX, regs::DX, regs::BX, regs::SP, regs::BP, regs::SI, regs::DI,
+			regs::R8W, regs::R9W, regs::R10W, regs::R11W, regs::R12W, regs::R13W, regs::R14W, regs::R15W
+		};
+
+		constexpr Register table_32[] = {
+			regs::EAX, regs::ECX, regs::EDX, regs::EBX, regs::ESP, regs::EBP, regs::ESI, regs::EDI,
+			regs::R8D, regs::R9D, regs::R10D, regs::R11D, regs::R12D, regs::R13D, regs::R14D, regs::R15D
+		};
+
+		constexpr Register table_64[] = {
+			regs::RAX, regs::RCX, regs::RDX, regs::RBX, regs::RSP, regs::RBP, regs::RSI, regs::RDI,
+			regs::R8, regs::R9, regs::R10, regs::R11, regs::R12, regs::R13, regs::R14, regs::R15
+		};
+
+
 		if(isByteMode)
 		{
 			// if the REX is present, then we should use this set of registers:
 			if(mods.rex.present())
 			{
-				switch(index)
-				{
-					case 0:  return regs::AL;
-					case 1:  return regs::CL;
-					case 2:  return regs::DL;
-					case 3:  return regs::BL;
-					case 4:  return regs::SPL;
-					case 5:  return regs::BPL;
-					case 6:  return regs::SIL;
-					case 7:  return regs::DIL;
-					case 8:  return regs::R8B;
-					case 9:  return regs::R9B;
-					case 10: return regs::R10B;
-					case 11: return regs::R11B;
-					case 12: return regs::R12B;
-					case 13: return regs::R13B;
-					case 14: return regs::R14B;
-					case 15: return regs::R15B;
-				}
+				if(index > 15)
+					return regs::INVALID;
+
+				return table_8[index];
 			}
 			else
 			{
+				if(index > 7)
+					return regs::INVALID;
+
 				// else use the other set.
-				switch(index)
-				{
-					case 0: return regs::AL;
-					case 1: return regs::CL;
-					case 2: return regs::DL;
-					case 3: return regs::BL;
-					case 4: return regs::AH;
-					case 5: return regs::CH;
-					case 6: return regs::DH;
-					case 7: return regs::BH;
-				}
+				return table_legacy_8[index];
 			}
 		}
 		else
 		{
+			// if REX.W, then we have a 64-bit operand. this has precedence over
+			// the 0x66 operand size prefix, so check for this first.
 			if(mods.rex.W || mods.default64BitRegister)
 			{
-				// if REX.W, then we have a 64-bit operand. this has precedence over
-				// the 0x66 operand size prefix, so check for this first.
-				switch(index)
-				{
-					case 0:  return regs::RAX;
-					case 1:  return regs::RCX;
-					case 2:  return regs::RDX;
-					case 3:  return regs::RBX;
-					case 4:  return regs::RSP;
-					case 5:  return regs::RBP;
-					case 6:  return regs::RSI;
-					case 7:  return regs::RDI;
-					case 8:  return regs::R8;
-					case 9:  return regs::R9;
-					case 10: return regs::R10;
-					case 11: return regs::R11;
-					case 12: return regs::R12;
-					case 13: return regs::R13;
-					case 14: return regs::R14;
-					case 15: return regs::R15;
-				}
+				if(index > 15)
+					return regs::INVALID;
+
+				return table_64[index];
 			}
 			else if(mods.operandSizeOverride)
 			{
+				if(index > 15)
+					return regs::INVALID;
+
 				// no REX.W, so 16-bit
-				switch(index)
-				{
-					case 0:  return regs::AX;
-					case 1:  return regs::CX;
-					case 2:  return regs::DX;
-					case 3:  return regs::BX;
-					case 4:  return regs::SP;
-					case 5:  return regs::BP;
-					case 6:  return regs::SI;
-					case 7:  return regs::DI;
-					case 8:  return regs::R8W;
-					case 9:  return regs::R9W;
-					case 10: return regs::R10W;
-					case 11: return regs::R11W;
-					case 12: return regs::R12W;
-					case 13: return regs::R13W;
-					case 14: return regs::R14W;
-					case 15: return regs::R15W;
-				}
+				return table_16[index];
 			}
 			else
 			{
+				if(index > 15)
+					return regs::INVALID;
+
 				// none of either prefix, so 32-bit.
-				switch(index)
-				{
-					case 0:  return regs::EAX;
-					case 1:  return regs::ECX;
-					case 2:  return regs::EDX;
-					case 3:  return regs::EBX;
-					case 4:  return regs::ESP;
-					case 5:  return regs::EBP;
-					case 6:  return regs::ESI;
-					case 7:  return regs::EDI;
-					case 8:  return regs::R8D;
-					case 9:  return regs::R9D;
-					case 10: return regs::R10D;
-					case 11: return regs::R11D;
-					case 12: return regs::R12D;
-					case 13: return regs::R13D;
-					case 14: return regs::R14D;
-					case 15: return regs::R15D;
-				}
+				return table_32[index];
 			}
 		}
-
-		return regs::INVALID;
 	}
 
 
@@ -515,7 +449,15 @@ namespace instrad::x64
 	}
 
 
-	constexpr Register getRegisterFromModRM(Buffer& buf, bool isByteMode, const InstrModifiers& mods)
+	constexpr Register getRegisterOperandFromModRM(Buffer& buf, bool isByteMode, const InstrModifiers& mods)
+	{
+		(void) buf;
+
+		return decodeRegisterNumber(isByteMode, mods, mods.modrm.rm | (mods.rex.B << 3));
+	}
+
+
+	constexpr Register getRegisterOperand(Buffer& buf, bool isByteMode, const InstrModifiers& mods)
 	{
 		(void) buf;
 
@@ -529,7 +471,7 @@ namespace instrad::x64
 		}
 	}
 
-	constexpr MemoryRef getMemoryFromModRM(Buffer& buf, bool isByteMode, const InstrModifiers& mods, int _bits = 0)
+	constexpr MemoryRef getMemoryOperand(Buffer& buf, bool isByteMode, const InstrModifiers& mods, int _bits = 0)
 	{
 		int bits = (_bits != 0) ? _bits : (
 			isByteMode
@@ -685,7 +627,7 @@ namespace instrad::x64
 		}
 	}
 
-	constexpr Operand getRegisterOrMemoryFromModRM(Buffer& buf, bool isByteMode, const InstrModifiers& mods)
+	constexpr Operand getRegisterOrMemoryOperand(Buffer& buf, bool isByteMode, const InstrModifiers& mods)
 	{
 		if(mods.directRegisterIndex)
 		{
@@ -694,7 +636,7 @@ namespace instrad::x64
 		}
 		else if(mods.modrm.mod != 3)
 		{
-			return getMemoryFromModRM(buf, isByteMode, mods);
+			return getMemoryOperand(buf, isByteMode, mods);
 		}
 		else if(mods.modrm.mod == 3)
 		{

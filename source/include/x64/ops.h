@@ -186,8 +186,8 @@ namespace instrad::x64
 
 		constexpr auto CPUID        = Op("cpuid");
 		constexpr auto CMPXCHG      = Op("cmpxchg");
-		constexpr auto CMPXCH8B     = Op("cmpxchg8b");
-		constexpr auto CMPXCH16B    = Op("cmpxchg16b");
+		constexpr auto CMPXCHG8B    = Op("cmpxchg8b");
+		constexpr auto CMPXCHG16B   = Op("cmpxchg16b");
 		constexpr auto XADD         = Op("xadd");
 		constexpr auto MOVZX        = Op("movzx");
 		constexpr auto MOVSXD       = Op("movsxd");

@@ -68,23 +68,32 @@ namespace instrad::x64
 		Mem128,
 		Mem256,
 
-		MmxRMReg,   // some dumb instructions encode the (only) register
-		XmmRMReg,   // operand in modRM.rm, instead of modRM.reg. use this so we know which to use.
+		RegMmx,
+		RegMmxMem32,
+		RegMmxMem64,
 
-		MmxReg,
-		MmxRegMem32,
-		MmxRegMem64,
+		RegXmm,
+		RegXmmMem32,
+		RegXmmMem64,
+		RegXmmMem128,
 
-		XmmReg,
-		XmmRegMem32,
-		XmmRegMem64,
-		XmmRegMem128,
-
-		YmmReg,
-		YmmRegMem256,
+		RegYmm,
+		RegYmmMem256,
 
 		// dumbness
 		Reg32Mem16,
+
+		// instructions living in extension tables, but taking a register operand (and not a reg/mem operand),
+		// cannot use the modRM.reg bits (for obvious reasons), so they encode the register operand in modRM.rm
+		// instead. use this so the decoder knows where to look for the operands.
+		// we also need to use this for some of the SSE instructions, because they take two register operands;
+		// instead of one reg and one reg/mem (all the "normal" instructions so far adhere to that pattern).
+		Reg8_Rm,
+		Reg16_Rm,
+		Reg32_Rm,
+		Reg64_Rm,
+		RegMmx_Rm,
+		RegXmm_Rm,
 
 
 		Ptr16_16,       // for far calls and jumps
@@ -103,10 +112,12 @@ namespace instrad::x64
 		constexpr bool present() const { return this->m_op != ops::INVALID; }
 
 		constexpr const TableEntry* extension() const { return this->m_exttable; }
-		constexpr bool extensionUsesRMBits() const { return this->m_extensionUsesRMBits; }
-		constexpr bool extensionUsesModBits() const { return this->m_extensionUsesModBits; }
 		constexpr const __Foozle& operands() const { return this->m_operands; }
 		constexpr bool isDirectRegisterIdx() const { return this->m_lowNibbleRegIdx; }
+
+		constexpr bool extensionUsesRMBits() const { return this->m_extensionUsesRMBits; }
+		constexpr bool extensionUsesModBits() const { return this->m_extensionUsesModBits; }
+		constexpr bool extensionUsesRexWBit() const { return this->m_extensionUsesRexWBit; }
 
 		constexpr int numOperands() const { return this->m_numOperands; }
 		constexpr uint8_t opcode() const { return this->m_opcode; }
@@ -123,6 +134,7 @@ namespace instrad::x64
 		bool m_needsModRM = false;
 		bool m_extensionUsesRMBits = false;
 		bool m_extensionUsesModBits = false;
+		bool m_extensionUsesRexWBit = false;
 		const TableEntry* m_exttable = nullptr;
 
 		friend constexpr TableEntry entry_none(uint8_t);
@@ -136,6 +148,7 @@ namespace instrad::x64
 		friend constexpr TableEntry entry_ext(uint8_t, const TableEntry*);
 		friend constexpr TableEntry entry_ext_rm(uint8_t, const TableEntry*);
 		friend constexpr TableEntry entry_ext_mod(uint8_t, const TableEntry*);
+		friend constexpr TableEntry entry_ext_rexw(uint8_t, const TableEntry*);
 
 		friend constexpr TableEntry entry_1_no_modrm(uint8_t, const Op&, OpKind);
 		friend constexpr TableEntry entry_2_no_modrm(uint8_t, const Op&, OpKind, OpKind);
@@ -283,6 +296,16 @@ namespace instrad::x64
 		ret.m_opcode = opcode;
 		ret.m_exttable = ext;
 		ret.m_extensionUsesModBits = true;
+		return ret;
+	}
+
+	// this one only uses the rex.w bit... ughhhhhhhhhhhhhhhhh
+	constexpr TableEntry entry_ext_rexw(uint8_t opcode, const TableEntry* ext)
+	{
+		auto ret = TableEntry();
+		ret.m_opcode = opcode;
+		ret.m_exttable = ext;
+		ret.m_extensionUsesRexWBit = true;
 		return ret;
 	}
 
@@ -954,10 +977,10 @@ namespace instrad::x64
 
 	// only used when opcode == 0x0F 0xAE, and has prefix 0xF3
 	constexpr TableEntry ModRMExt_0F_AE_Prefix_F3[] = {
-		entry_1(0xAE, ops::RDFSBASE, OpKind::Reg32),
-		entry_1(0xAE, ops::RDGSBASE, OpKind::Reg32),
-		entry_1(0xAE, ops::WRFSBASE, OpKind::Reg32),
-		entry_1(0xAE, ops::WRGSBASE, OpKind::Reg32),
+		entry_1(0xAE, ops::RDFSBASE, OpKind::Reg32_Rm),
+		entry_1(0xAE, ops::RDGSBASE, OpKind::Reg32_Rm),
+		entry_1(0xAE, ops::WRFSBASE, OpKind::Reg32_Rm),
+		entry_1(0xAE, ops::WRGSBASE, OpKind::Reg32_Rm),
 
 		entry_blank,
 		entry_blank,
@@ -1009,10 +1032,10 @@ namespace instrad::x64
 		entry_1(0x1F, ops::NOP, OpKind::RegMem32),
 
 		// the non-special register is encoded in the rm bits, so use RegMem64 even though it's not really mem.
-		entry_2(0x20, ops::MOV, OpKind::RegMem64, OpKind::ControlReg),
-		entry_2(0x21, ops::MOV, OpKind::RegMem64, OpKind::DebugReg),
-		entry_2(0x22, ops::MOV, OpKind::ControlReg, OpKind::RegMem64),
-		entry_2(0x23, ops::MOV, OpKind::DebugReg, OpKind::RegMem64),
+		entry_2(0x20, ops::MOV, OpKind::Reg64_Rm, OpKind::ControlReg),
+		entry_2(0x21, ops::MOV, OpKind::Reg64_Rm, OpKind::DebugReg),
+		entry_2(0x22, ops::MOV, OpKind::ControlReg, OpKind::Reg64_Rm),
+		entry_2(0x23, ops::MOV, OpKind::DebugReg, OpKind::Reg64_Rm),
 		entry_none(0x24),
 		entry_none(0x25),
 		entry_none(0x26),
@@ -1173,10 +1196,6 @@ namespace instrad::x64
 		entry_none(0xFC), entry_none(0xFD), entry_none(0xFE), entry_none(0xFF),
 	};
 
-	// TODO: tables need re-doing for MMX; apparently, some of them fucking encode the
-	// only register operand (eg. 'PSLLW mm0, 0xFF') in modRM.rm, instead of modRM.reg.
-	// JESUS.
-
 	// the stupid thing about these dumbass SSE opcodes is that we need to differentiate
 	// the opcodes based on their operand type. for example. 0x12: MOVLPS xmm, mem64
 	// is also 0x12 MOVHLPS xmm, xmm; they do quite different things, but have the same
@@ -1185,59 +1204,68 @@ namespace instrad::x64
 	// our existing mechanisms to disambiguate them.
 	// we set the first entry as the memory-operand-type (modrm.mod != 3), and
 	// the second entry as the register-operand-type (modrm.mod == 3).
+
+	// also, there are some instructions taking two register operands; in these cases we must
+	// manually specify which register goes in the modRM.reg slot, and which one in the modRM.rm slot.
 	constexpr TableEntry ModRMExt_0F_PrefixNone_12_Mod3[] = {
-		entry_2(0x12, ops::MOVLPS,  OpKind::XmmReg, OpKind::Mem64),         // modRM.mod != 3
-		entry_2(0x12, ops::MOVHLPS, OpKind::XmmReg, OpKind::XmmReg),        // modRM.mod == 3
+		entry_2(0x12, ops::MOVLPS,  OpKind::RegXmm, OpKind::Mem64),         // modRM.mod != 3
+		entry_2(0x12, ops::MOVHLPS, OpKind::RegXmm, OpKind::RegXmm_Rm),     // modRM.mod == 3
 	};
 
 	constexpr TableEntry ModRMExt_0F_PrefixNone_16_Mod3[] = {
-		entry_2(0x16, ops::MOVHPS,  OpKind::XmmReg, OpKind::Mem64),         // modRM.mod != 3
-		entry_2(0x16, ops::MOVLHPS, OpKind::XmmReg, OpKind::XmmReg),        // modRM.mod == 3
+		entry_2(0x16, ops::MOVHPS,  OpKind::RegXmm, OpKind::Mem64),         // modRM.mod != 3
+		entry_2(0x16, ops::MOVLHPS, OpKind::RegXmm, OpKind::RegXmm_Rm),     // modRM.mod == 3
+	};
+
+	// very specific table for cmpxchg8B/16B -- if REX.W is present, then it's 16b, if not it's 8b.
+	// so far, this is the only instruction that does this -- but we still need to support it.
+	constexpr TableEntry ModRMExt_0F_PrefixAny_C7_RexW[] = {
+		entry_1(0xC7, ops::CMPXCHG8B, OpKind::Mem64),                       // rex.W == 0
+		entry_1(0xC7, ops::CMPXCHG16B, OpKind::Mem128)                      // rex.W == 1
 	};
 
 	// "normal" extensions
 	constexpr TableEntry ModRMExt_0F_PrefixAny_C7[] = {
 		entry_blank,
-		// cmpxchg8b or cmpxchg16b; need to differentiate with REX.W
-		entry_none(0xC7),
+		entry_ext_rexw(0xC7, &ModRMExt_0F_PrefixAny_C7_RexW[0]),
 		entry_blank,
 		entry_blank,
 		entry_blank,
 		entry_blank,
-		entry_1(0xC7, ops::RDRAND, OpKind::Reg32),
-		entry_1(0xC7, ops::RDSEED, OpKind::Reg32),
+		entry_1(0xC7, ops::RDRAND, OpKind::Reg32_Rm),
+		entry_1(0xC7, ops::RDSEED, OpKind::Reg32_Rm),
 	};
 
 	constexpr TableEntry ModRMExt_0F_PrefixNone_71[] = {
 		entry_blank,
 		entry_blank,
-		entry_2(0x71, ops::PSRLW, OpKind::MmxReg, OpKind::Imm8),
+		entry_2(0x71, ops::PSRLW, OpKind::RegMmx_Rm, OpKind::Imm8),
 		entry_blank,
-		entry_2(0x71, ops::PSRAW, OpKind::MmxReg, OpKind::Imm8),
+		entry_2(0x71, ops::PSRAW, OpKind::RegMmx_Rm, OpKind::Imm8),
 		entry_blank,
-		entry_2(0x71, ops::PSLLW, OpKind::MmxReg, OpKind::Imm8),
+		entry_2(0x71, ops::PSLLW, OpKind::RegMmx_Rm, OpKind::Imm8),
 		entry_blank,
 	};
 
 	constexpr TableEntry ModRMExt_0F_PrefixNone_72[] = {
 		entry_blank,
 		entry_blank,
-		entry_2(0x72, ops::PSRLD, OpKind::MmxReg, OpKind::Imm8),
+		entry_2(0x72, ops::PSRLD, OpKind::RegMmx_Rm, OpKind::Imm8),
 		entry_blank,
-		entry_2(0x72, ops::PSRAD, OpKind::MmxReg, OpKind::Imm8),
+		entry_2(0x72, ops::PSRAD, OpKind::RegMmx_Rm, OpKind::Imm8),
 		entry_blank,
-		entry_2(0x72, ops::PSLLD, OpKind::MmxReg, OpKind::Imm8),
+		entry_2(0x72, ops::PSLLD, OpKind::RegMmx_Rm, OpKind::Imm8),
 		entry_blank,
 	};
 
 	constexpr TableEntry ModRMExt_0F_PrefixNone_73[] = {
 		entry_blank,
 		entry_blank,
-		entry_2(0x73, ops::PSRLQ, OpKind::MmxReg, OpKind::Imm8),
+		entry_2(0x73, ops::PSRLQ, OpKind::RegMmx_Rm, OpKind::Imm8),
 		entry_blank,
 		entry_blank,
 		entry_blank,
-		entry_2(0x73, ops::PSLLQ, OpKind::MmxReg, OpKind::Imm8),
+		entry_2(0x73, ops::PSLLQ, OpKind::RegMmx_Rm, OpKind::Imm8),
 		entry_blank,
 	};
 
@@ -1280,14 +1308,14 @@ namespace instrad::x64
 		entry_none(0x08), entry_none(0x09), entry_none(0x0A), entry_none(0x0B),
 		entry_none(0x0C), entry_none(0x0D), entry_none(0x0E), entry_none(0x0F),
 
-		entry_2(0x10, ops::MOVUPS, OpKind::XmmReg, OpKind::XmmRegMem128),
-		entry_2(0x11, ops::MOVUPS, OpKind::XmmRegMem128, OpKind::XmmReg),
+		entry_2(0x10, ops::MOVUPS, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x11, ops::MOVUPS, OpKind::RegXmmMem128, OpKind::RegXmm),
 		entry_ext_mod(0x12, &ModRMExt_0F_PrefixNone_12_Mod3[0]),
-		entry_2(0x13, ops::MOVLPS, OpKind::Mem64, OpKind::XmmReg),
-		entry_2(0x14, ops::UNPCKLPS, OpKind::XmmReg, OpKind::XmmRegMem128),
-		entry_2(0x15, ops::UNPCKHPS, OpKind::XmmReg, OpKind::XmmRegMem128),
+		entry_2(0x13, ops::MOVLPS, OpKind::Mem64, OpKind::RegXmm),
+		entry_2(0x14, ops::UNPCKLPS, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x15, ops::UNPCKHPS, OpKind::RegXmm, OpKind::RegXmmMem128),
 		entry_ext_mod(0x16, &ModRMExt_0F_PrefixNone_16_Mod3[0]),
-		entry_2(0x17, ops::MOVHPS, OpKind::Mem64, OpKind::XmmReg),
+		entry_2(0x17, ops::MOVHPS, OpKind::Mem64, OpKind::RegXmm),
 
 		// opcodes 0x18 to 0x27 are not prefixed
 		entry_none(0x18), entry_none(0x19), entry_none(0x1A), entry_none(0x1B),
@@ -1295,14 +1323,14 @@ namespace instrad::x64
 		entry_none(0x20), entry_none(0x21), entry_none(0x22), entry_none(0x23),
 		entry_none(0x24), entry_none(0x25), entry_none(0x26), entry_none(0x27),
 
-		entry_2(0x28, ops::MOVAPS, OpKind::XmmReg, OpKind::XmmRegMem128),
-		entry_2(0x29, ops::MOVAPS, OpKind::XmmRegMem128, OpKind::XmmReg),
-		entry_2(0x2A, ops::CVTPI2PS, OpKind::XmmReg, OpKind::MmxRegMem64),
-		entry_2(0x2B, ops::MOVNTPS, OpKind::Mem128, OpKind::XmmReg),
-		entry_2(0x2C, ops::CVTTPS2PI, OpKind::MmxReg, OpKind::XmmRegMem64),
-		entry_2(0x2D, ops::CVTPS2PI, OpKind::MmxReg, OpKind::XmmRegMem64),
-		entry_2(0x2E, ops::UCOMISS, OpKind::XmmReg, OpKind::XmmRegMem32),
-		entry_2(0x2F, ops::COMISS, OpKind::XmmReg, OpKind::XmmRegMem32),
+		entry_2(0x28, ops::MOVAPS, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x29, ops::MOVAPS, OpKind::RegXmmMem128, OpKind::RegXmm),
+		entry_2(0x2A, ops::CVTPI2PS, OpKind::RegXmm, OpKind::RegMmxMem64),
+		entry_2(0x2B, ops::MOVNTPS, OpKind::Mem128, OpKind::RegXmm),
+		entry_2(0x2C, ops::CVTTPS2PI, OpKind::RegMmx, OpKind::RegXmmMem64),
+		entry_2(0x2D, ops::CVTPS2PI, OpKind::RegMmx, OpKind::RegXmmMem64),
+		entry_2(0x2E, ops::UCOMISS, OpKind::RegXmm, OpKind::RegXmmMem32),
+		entry_2(0x2F, ops::COMISS, OpKind::RegXmm, OpKind::RegXmmMem32),
 
 		// opcodes 0x30 to 0x4F are not prefixed
 		entry_none(0x30), entry_none(0x31), entry_none(0x32), entry_none(0x33),
@@ -1314,49 +1342,49 @@ namespace instrad::x64
 		entry_none(0x48), entry_none(0x49), entry_none(0x4A), entry_none(0x4B),
 		entry_none(0x4C), entry_none(0x4D), entry_none(0x4E), entry_none(0x4F),
 
-		entry_2(0x50, ops::MOVMSKPS, OpKind::Reg32, OpKind::XmmReg),
-		entry_2(0x51, ops::SQRTPS, OpKind::XmmReg, OpKind::XmmRegMem128),
-		entry_2(0x52, ops::RSQRTPS, OpKind::XmmReg, OpKind::XmmRegMem128),
-		entry_2(0x53, ops::RCPPS, OpKind::XmmReg, OpKind::XmmRegMem128),
-		entry_2(0x54, ops::ANDPS, OpKind::XmmReg, OpKind::XmmRegMem128),
-		entry_2(0x55, ops::ANDNPS, OpKind::XmmReg, OpKind::XmmRegMem128),
-		entry_2(0x56, ops::ORPS, OpKind::XmmReg, OpKind::XmmRegMem128),
-		entry_2(0x57, ops::XORPS, OpKind::XmmReg, OpKind::XmmRegMem128),
+		entry_2(0x50, ops::MOVMSKPS, OpKind::Reg32, OpKind::RegXmm_Rm),
+		entry_2(0x51, ops::SQRTPS, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x52, ops::RSQRTPS, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x53, ops::RCPPS, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x54, ops::ANDPS, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x55, ops::ANDNPS, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x56, ops::ORPS, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x57, ops::XORPS, OpKind::RegXmm, OpKind::RegXmmMem128),
 
-		entry_2(0x58, ops::ADDPS, OpKind::XmmReg, OpKind::XmmRegMem128),
-		entry_2(0x59, ops::MULPS, OpKind::XmmReg, OpKind::XmmRegMem128),
-		entry_2(0x5A, ops::CVTPS2PD, OpKind::XmmReg, OpKind::XmmRegMem64),
-		entry_2(0x5B, ops::CVTDQ2PS, OpKind::XmmReg, OpKind::XmmRegMem128),
-		entry_2(0x5C, ops::SUBPS, OpKind::XmmReg, OpKind::XmmRegMem128),
-		entry_2(0x5D, ops::MINPS, OpKind::XmmReg, OpKind::XmmRegMem128),
-		entry_2(0x5E, ops::DIVPS, OpKind::XmmReg, OpKind::XmmRegMem128),
-		entry_2(0x5F, ops::MAXPS, OpKind::XmmReg, OpKind::XmmRegMem128),
+		entry_2(0x58, ops::ADDPS, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x59, ops::MULPS, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x5A, ops::CVTPS2PD, OpKind::RegXmm, OpKind::RegXmmMem64),
+		entry_2(0x5B, ops::CVTDQ2PS, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x5C, ops::SUBPS, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x5D, ops::MINPS, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x5E, ops::DIVPS, OpKind::RegXmm, OpKind::RegXmmMem128),
+		entry_2(0x5F, ops::MAXPS, OpKind::RegXmm, OpKind::RegXmmMem128),
 
-		entry_2(0x60, ops::PUNPCKLBW, OpKind::MmxReg, OpKind::MmxRegMem32),
-		entry_2(0x61, ops::PUNPCKLWD, OpKind::MmxReg, OpKind::MmxRegMem32),
-		entry_2(0x62, ops::PUNPCKLDQ, OpKind::MmxReg, OpKind::MmxRegMem32),
-		entry_2(0x63, ops::PACKSSWB, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0x64, ops::PCMPGTB, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0x65, ops::PCMPGTW, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0x66, ops::PCMPGTD, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0x67, ops::PACKUSWB, OpKind::MmxReg, OpKind::MmxRegMem64),
+		entry_2(0x60, ops::PUNPCKLBW, OpKind::RegMmx, OpKind::RegMmxMem32),
+		entry_2(0x61, ops::PUNPCKLWD, OpKind::RegMmx, OpKind::RegMmxMem32),
+		entry_2(0x62, ops::PUNPCKLDQ, OpKind::RegMmx, OpKind::RegMmxMem32),
+		entry_2(0x63, ops::PACKSSWB, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0x64, ops::PCMPGTB, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0x65, ops::PCMPGTW, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0x66, ops::PCMPGTD, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0x67, ops::PACKUSWB, OpKind::RegMmx, OpKind::RegMmxMem64),
 
-		entry_2(0x68, ops::PUNPCKHBW, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0x69, ops::PUNPCKHWD, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0x6A, ops::PUNPCKHDQ, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0x6B, ops::PACKSSDW, OpKind::MmxReg, OpKind::MmxRegMem64),
+		entry_2(0x68, ops::PUNPCKHBW, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0x69, ops::PUNPCKHWD, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0x6A, ops::PUNPCKHDQ, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0x6B, ops::PACKSSDW, OpKind::RegMmx, OpKind::RegMmxMem64),
 		entry_none(0x6C),
 		entry_none(0x6D),
-		entry_2(0x6E, ops::MOVD, OpKind::MmxReg, OpKind::RegMem32),         // this will auto-promote to RegMem64 based on REX.W
-		entry_2(0x6F, ops::MOVQ, OpKind::MmxReg, OpKind::MmxRegMem64),
+		entry_2(0x6E, ops::MOVD, OpKind::RegMmx, OpKind::RegMem32),         // this will auto-promote to RegMem64 based on REX.W
+		entry_2(0x6F, ops::MOVQ, OpKind::RegMmx, OpKind::RegMmxMem64),
 
-		entry_3(0x70, ops::PSHUFW, OpKind::MmxReg, OpKind::MmxRegMem64, OpKind::Imm8),
+		entry_3(0x70, ops::PSHUFW, OpKind::RegMmx, OpKind::RegMmxMem64, OpKind::Imm8),
 		entry_ext(0x71, &ModRMExt_0F_PrefixNone_71[0]),
 		entry_ext(0x72, &ModRMExt_0F_PrefixNone_72[0]),
 		entry_ext(0x73, &ModRMExt_0F_PrefixNone_73[0]),
-		entry_2(0x74, ops::PCMPEQB, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0x75, ops::PCMPEQW, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0x76, ops::PCMPEQD, OpKind::MmxReg, OpKind::MmxRegMem64),
+		entry_2(0x74, ops::PCMPEQB, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0x75, ops::PCMPEQW, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0x76, ops::PCMPEQD, OpKind::RegMmx, OpKind::RegMmxMem64),
 		entry_0(0x77, ops::EMMS),
 
 		entry_none(0x78),
@@ -1365,8 +1393,8 @@ namespace instrad::x64
 		entry_none(0x7B),
 		entry_none(0x7C),
 		entry_none(0x7D),
-		entry_2(0x7E, ops::MOVD, OpKind::RegMem32, OpKind::MmxReg),         // this will auto-promote to RegMem64 based on REX.W
-		entry_2(0x7F, ops::MOVQ, OpKind::MmxRegMem64, OpKind::MmxReg),
+		entry_2(0x7E, ops::MOVD, OpKind::RegMem32, OpKind::RegMmx),         // this will auto-promote to RegMem64 based on REX.W
+		entry_2(0x7F, ops::MOVQ, OpKind::RegMmxMem64, OpKind::RegMmx),
 
 		// opcodes 0x80 to 0xAF are not prefixed
 		entry_none(0x80), entry_none(0x81), entry_none(0x82), entry_none(0x83),
@@ -1398,11 +1426,11 @@ namespace instrad::x64
 
 		entry_2(0xC0, ops::XADD, OpKind::RegMem8, OpKind::Reg8),
 		entry_2(0xC1, ops::XADD, OpKind::RegMem32, OpKind::Reg32),
-		entry_3(0xC2, ops::CMPPS, OpKind::XmmReg, OpKind::XmmRegMem128, OpKind::Imm8),
+		entry_3(0xC2, ops::CMPPS, OpKind::RegXmm, OpKind::RegXmmMem128, OpKind::Imm8),
 		entry_2(0xC3, ops::MOVNTI, OpKind::Mem32, OpKind::Reg32),
-		entry_3(0xC4, ops::PINSRW, OpKind::MmxReg, OpKind::Reg32Mem16, OpKind::Imm8),
-		entry_3(0xC5, ops::PEXTRW, OpKind::Reg32, OpKind::MmxReg, OpKind::Imm8),
-		entry_3(0xC6, ops::SHUFPS, OpKind::XmmReg, OpKind::XmmRegMem128, OpKind::Imm8),
+		entry_3(0xC4, ops::PINSRW, OpKind::RegMmx, OpKind::Reg32Mem16, OpKind::Imm8),
+		entry_3(0xC5, ops::PEXTRW, OpKind::Reg32, OpKind::RegMmx_Rm, OpKind::Imm8),
+		entry_3(0xC6, ops::SHUFPS, OpKind::RegXmm, OpKind::RegXmmMem128, OpKind::Imm8),
 		entry_ext(0xC7, &ModRMExt_0F_PrefixAny_C7[0]),
 
 		// opcodes 0xC8 to 0xCF are not prefixed
@@ -1410,57 +1438,57 @@ namespace instrad::x64
 		entry_none(0xCC), entry_none(0xCD), entry_none(0xCE), entry_none(0xCF),
 
 		entry_none(0xD0),
-		entry_2(0xD1, ops::PSRLW, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xD2, ops::PSRLD, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xD3, ops::PSRLQ, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xD4, ops::PADDQ, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xD5, ops::PMULLW, OpKind::MmxReg, OpKind::MmxRegMem64),
+		entry_2(0xD1, ops::PSRLW, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xD2, ops::PSRLD, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xD3, ops::PSRLQ, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xD4, ops::PADDQ, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xD5, ops::PMULLW, OpKind::RegMmx, OpKind::RegMmxMem64),
 		entry_none(0xD6),
-		entry_2(0xD7, ops::PMOVMSKB, OpKind::Reg32, OpKind::MmxReg),
+		entry_2(0xD7, ops::PMOVMSKB, OpKind::Reg32, OpKind::RegMmx_Rm),
 
-		entry_2(0xD8, ops::PSUBUSB, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xD9, ops::PSUBUSW, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xDA, ops::PMINUB, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xDB, ops::PAND, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xDC, ops::PADDUSB, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xDD, ops::PADDUSW, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xDE, ops::PMAXUB, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xDF, ops::PANDN, OpKind::MmxReg, OpKind::MmxRegMem64),
+		entry_2(0xD8, ops::PSUBUSB, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xD9, ops::PSUBUSW, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xDA, ops::PMINUB, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xDB, ops::PAND, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xDC, ops::PADDUSB, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xDD, ops::PADDUSW, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xDE, ops::PMAXUB, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xDF, ops::PANDN, OpKind::RegMmx, OpKind::RegMmxMem64),
 
-		entry_2(0xE0, ops::PAVGB, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xE1, ops::PSRAW, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xE2, ops::PSRAD, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xE3, ops::PAVGW, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xE4, ops::PMULHUW, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xE5, ops::PMULHW, OpKind::MmxReg, OpKind::MmxRegMem64),
+		entry_2(0xE0, ops::PAVGB, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xE1, ops::PSRAW, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xE2, ops::PSRAD, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xE3, ops::PAVGW, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xE4, ops::PMULHUW, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xE5, ops::PMULHW, OpKind::RegMmx, OpKind::RegMmxMem64),
 		entry_none(0xE6),
-		entry_2(0xE7, ops::MOVNTQ, OpKind::Mem64, OpKind::MmxReg),
+		entry_2(0xE7, ops::MOVNTQ, OpKind::Mem64, OpKind::RegMmx),
 
-		entry_2(0xE8, ops::PSUBSB, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xE9, ops::PSUBSW, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xEA, ops::PMINSW, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xEB, ops::POR, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xEC, ops::PADDSB, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xED, ops::PADDSW, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xEE, ops::PMAXSW, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xEF, ops::PXOR, OpKind::MmxReg, OpKind::MmxRegMem64),
+		entry_2(0xE8, ops::PSUBSB, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xE9, ops::PSUBSW, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xEA, ops::PMINSW, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xEB, ops::POR, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xEC, ops::PADDSB, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xED, ops::PADDSW, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xEE, ops::PMAXSW, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xEF, ops::PXOR, OpKind::RegMmx, OpKind::RegMmxMem64),
 
 		entry_none(0xF0),
-		entry_2(0xF1, ops::PSLLW, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xF2, ops::PSLLD, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xF3, ops::PSLLQ, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xF4, ops::PMULUDQ, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xF5, ops::PMADDWD, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xF6, ops::PSADBW, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xF7, ops::MASKMOVQ, OpKind::MmxReg, OpKind::MmxReg),
+		entry_2(0xF1, ops::PSLLW, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xF2, ops::PSLLD, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xF3, ops::PSLLQ, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xF4, ops::PMULUDQ, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xF5, ops::PMADDWD, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xF6, ops::PSADBW, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xF7, ops::MASKMOVQ, OpKind::RegMmx, OpKind::RegMmx_Rm),
 
-		entry_2(0xF8, ops::PSUBB, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xF9, ops::PSUBW, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xFA, ops::PSUBD, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xFB, ops::PSUBQ, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xFC, ops::PADDB, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xFD, ops::PADDW, OpKind::MmxReg, OpKind::MmxRegMem64),
-		entry_2(0xFE, ops::PADDD, OpKind::MmxReg, OpKind::MmxRegMem64),
+		entry_2(0xF8, ops::PSUBB, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xF9, ops::PSUBW, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xFA, ops::PSUBD, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xFB, ops::PSUBQ, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xFC, ops::PADDB, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xFD, ops::PADDW, OpKind::RegMmx, OpKind::RegMmxMem64),
+		entry_2(0xFE, ops::PADDD, OpKind::RegMmx, OpKind::RegMmxMem64),
 		entry_0(0xFF, ops::UD0),
 	};
 
