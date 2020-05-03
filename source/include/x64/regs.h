@@ -218,5 +218,90 @@ namespace instrad::x64
 
 		// invalid is a poison value, not valid anywhere.
 		constexpr auto INVALID  = Register(-99, 0, "");
+
+
+
+		constexpr Register RegisterTable_Legacy_8[] = {
+			regs::AL, regs::CL, regs::DL, regs::BL, regs::AH, regs::CH, regs::DH, regs::BH
+		};
+
+		constexpr Register RegisterTable_8[] = {
+			regs::AL, regs::CL, regs::DL, regs::BL, regs::SPL, regs::BPL, regs::SIL, regs::DIL,
+			regs::R8B, regs::R9B, regs::R10B, regs::R11B, regs::R12B, regs::R13B, regs::R14B, regs::R15B
+		};
+
+		constexpr Register RegisterTable_16[] = {
+			regs::AX, regs::CX, regs::DX, regs::BX, regs::SP, regs::BP, regs::SI, regs::DI,
+			regs::R8W, regs::R9W, regs::R10W, regs::R11W, regs::R12W, regs::R13W, regs::R14W, regs::R15W
+		};
+
+		constexpr Register RegisterTable_32[] = {
+			regs::EAX, regs::ECX, regs::EDX,  regs::EBX,  regs::ESP,  regs::EBP,  regs::ESI,  regs::EDI,
+			regs::R8D, regs::R9D, regs::R10D, regs::R11D, regs::R12D, regs::R13D, regs::R14D, regs::R15D
+		};
+
+		constexpr Register RegisterTable_64[] = {
+			regs::RAX, regs::RCX, regs::RDX, regs::RBX, regs::RSP, regs::RBP, regs::RSI, regs::RDI,
+			regs::R8,  regs::R9,  regs::R10, regs::R11, regs::R12, regs::R13, regs::R14, regs::R15
+		};
+
+		constexpr Register RegisterTable_Segment[] = {
+			regs::ES, regs::CS, regs::SS, regs::DS, regs::FS, regs::GS
+		};
+
+		constexpr Register RegisterTable_Control[] = {
+			regs::CR0, regs::CR1, regs::CR2,  regs::CR3,  regs::CR4,  regs::CR5,  regs::CR6,  regs::CR7,
+			regs::CR8, regs::CR9, regs::CR10, regs::CR11, regs::CR12, regs::CR13, regs::CR14, regs::CR15
+		};
+
+		constexpr Register RegisterTable_Debug[] = {
+			regs::DR0, regs::DR1, regs::DR2,  regs::DR3,  regs::DR4,  regs::DR5,  regs::DR6,  regs::DR7,
+			regs::DR8, regs::DR9, regs::DR10, regs::DR11, regs::DR12, regs::DR13, regs::DR14, regs::DR15
+		};
+
+		constexpr Register RegisterTable_MMX[] = {
+			regs::MMX0, regs::MMX1, regs::MMX2, regs::MMX3, regs::MMX4, regs::MMX5, regs::MMX6, regs::MMX7
+		};
+
+		constexpr Register RegisterTable_XMM[] = {
+			regs::XMM0, regs::XMM1, regs::XMM2,  regs::XMM3,  regs::XMM4,  regs::XMM5,  regs::XMM6,  regs::XMM7,
+			regs::XMM8, regs::XMM9, regs::XMM10, regs::XMM11, regs::XMM12, regs::XMM13, regs::XMM14, regs::XMM15
+		};
+
+
+
+
+
+		template <typename T, size_t N>
+		constexpr size_t ArrayLength(const T (&arr)[N]) { return N; }
+
+		static_assert(ArrayLength(RegisterTable_Legacy_8) == 8, "invalid register table");
+		static_assert(ArrayLength(RegisterTable_8)  == 16, "invalid register table");
+		static_assert(ArrayLength(RegisterTable_16) == 16, "invalid register table");
+		static_assert(ArrayLength(RegisterTable_32) == 16, "invalid register table");
+		static_assert(ArrayLength(RegisterTable_64) == 16, "invalid register table");
+		static_assert(ArrayLength(RegisterTable_Segment) == 6, "invalid register table");
+		static_assert(ArrayLength(RegisterTable_Control) == 16, "invalid register table");
+		static_assert(ArrayLength(RegisterTable_Debug) == 16, "invalid register table");
+		static_assert(ArrayLength(RegisterTable_MMX) == 8, "invalid register table");
+		static_assert(ArrayLength(RegisterTable_XMM) == 16, "invalid register table");
+
+		template <size_t N>
+		constexpr Register __getOrInvalid(const Register (&arr)[N], size_t idx)
+		{
+			if(idx > N) return INVALID;
+			return arr[idx];
+		}
+
+		constexpr Register get8BitLegacy(size_t idx)    { return __getOrInvalid(RegisterTable_Legacy_8, idx); }
+		constexpr Register get8Bit(size_t idx)          { return __getOrInvalid(RegisterTable_8, idx); }
+		constexpr Register get16Bit(size_t idx)         { return __getOrInvalid(RegisterTable_16, idx); }
+		constexpr Register get32Bit(size_t idx)         { return __getOrInvalid(RegisterTable_32, idx); }
+		constexpr Register get64Bit(size_t idx)         { return __getOrInvalid(RegisterTable_64, idx); }
+		constexpr Register getSegment(size_t idx)       { return __getOrInvalid(RegisterTable_Segment, idx); }
+		constexpr Register getControl(size_t idx)       { return __getOrInvalid(RegisterTable_Control, idx); }
+		constexpr Register getDebug(size_t idx)         { return __getOrInvalid(RegisterTable_Debug, idx); }
+		constexpr Register getMMX(size_t idx)           { return __getOrInvalid(RegisterTable_MMX, idx); }
+		constexpr Register getXMM(size_t idx)           { return __getOrInvalid(RegisterTable_XMM, idx); }
 	}
 }

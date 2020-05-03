@@ -37,15 +37,29 @@ std::string print_intel(const instrad::x64::Instruction& instr)
 			auto& base = mem.base();
 			auto& idx = mem.index();
 
+			std::string size = "";
+			switch(mem.bits())
+			{
+				case 8:     size = "byte ptr ";     break;
+				case 16:    size = "word ptr ";     break;
+				case 32:    size = "dword ptr ";    break;
+				case 64:    size = "qword ptr ";    break;
+				case 128:   size = "xmmword ptr ";  break;
+				case 256:   size = "ymmword ptr ";  break;
+				case 512:   size = "zmmword ptr ";  break;
+				default:    break;
+			}
+
+
 			std::string segment = "";
 			if(mem.segment().present())
 				segment = zpr::sprint("%s:", mem.segment().name());
 
 			// you can't scale a displacement, so we're fine here.
 			if(!base.present() && !idx.present())
-				return segment + zpr::sprint("[%#x]", mem.displacement());
+				return size + segment + zpr::sprint("[%#x]", mem.displacement());
 
-			std::string tmp = segment + "[";
+			std::string tmp = size + segment + "[";
 			if(base.present())
 			{
 				tmp += zpr::sprint("%s", base.name());

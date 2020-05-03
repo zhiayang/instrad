@@ -8,61 +8,45 @@
 
 namespace instrad::x64
 {
-	Register getSegmentOfOverride(int override)
-	{
-		switch(override)
-		{
-			case InstrModifiers::SEG_CS: return regs::CS;
-			case InstrModifiers::SEG_DS: return regs::DS;
-			case InstrModifiers::SEG_ES: return regs::ES;
-			case InstrModifiers::SEG_FS: return regs::FS;
-			case InstrModifiers::SEG_GS: return regs::GS;
-			case InstrModifiers::SEG_SS: return regs::SS;
-
-			default: return regs::NONE;
-		}
-	}
-
 	Operand getOperand(Buffer& buf, OpKind kind, InstrModifiers& mods)
 	{
 		// TODO: we should not promote Mem16/RegMem16/Reg16!!
 		switch(kind)
 		{
-			// byte-sized things are not promoted
-			case OpKind::Reg8:
-				return getRegisterOperand(buf, /* byte; */ true, mods);
+			case OpKind::Reg8:          return getRegisterOperand(8,  mods, RegKind::GPR);
+			case OpKind::Reg16:         return getRegisterOperand(16, mods, RegKind::GPR);
+			case OpKind::Reg32:         return getRegisterOperand(32, mods, RegKind::GPR);
+			case OpKind::Reg64:         return getRegisterOperand(64, mods, RegKind::GPR);
 
-			case OpKind::Reg64: mods.default64BitRegister = true; [[fallthrough]];
-			case OpKind::Reg16:
-			case OpKind::Reg32:
-				return getRegisterOperand(buf, /* byte: */ false, mods);
+			case OpKind::Reg8_Rm:       return getRegisterOperandFromModRM(8,  mods, RegKind::GPR);
+			case OpKind::Reg16_Rm:      return getRegisterOperandFromModRM(16, mods, RegKind::GPR);
+			case OpKind::Reg32_Rm:      return getRegisterOperandFromModRM(32, mods, RegKind::GPR);
+			case OpKind::Reg64_Rm:      return getRegisterOperandFromModRM(64, mods, RegKind::GPR);
 
-			case OpKind::Reg8_Rm:
-				return getRegisterOperandFromModRM(buf, /* byte: */ true, mods);
+			case OpKind::RegMem8:       return getRegisterOrMemoryOperand(buf, 8,  8,  mods, RegKind::GPR);
+			case OpKind::RegMem16:      return getRegisterOrMemoryOperand(buf, 16, 16, mods, RegKind::GPR);
+			case OpKind::RegMem32:      return getRegisterOrMemoryOperand(buf, 32, 32, mods, RegKind::GPR);
+			case OpKind::RegMem64:      return getRegisterOrMemoryOperand(buf, 64, 64, mods, RegKind::GPR);
 
-			case OpKind::Reg64_Rm: mods.default64BitRegister = true; [[fallthrough]];
-			case OpKind::Reg16_Rm:
-			case OpKind::Reg32_Rm:
-				return getRegisterOperandFromModRM(buf, /* byte: */ false, mods);
+			case OpKind::Mem8:          return getMemoryOperand(buf, 8, mods);
+			case OpKind::Mem16:         return getMemoryOperand(buf, 16, mods);
+			case OpKind::Mem32:         return getMemoryOperand(buf, 32, mods);
+			case OpKind::Mem64:         return getMemoryOperand(buf, 64, mods);
+			case OpKind::Mem128:        return getMemoryOperand(buf, 128, mods);
+			case OpKind::Mem256:        return getMemoryOperand(buf, 256, mods);
 
+			case OpKind::RegMmx:        return getRegisterOperand(64, mods, RegKind::Vector);
+			case OpKind::RegXmm:        return getRegisterOperand(128, mods, RegKind::Vector);
 
-			case OpKind::RegMem8:
-				return getRegisterOrMemoryOperand(buf, /* byte; */ true, mods);
+			case OpKind::RegMmx_Rm:     return getRegisterOperandFromModRM(64, mods, RegKind::Vector);
+			case OpKind::RegXmm_Rm:     return getRegisterOperandFromModRM(128, mods, RegKind::Vector);
 
-			case OpKind::RegMem64: mods.default64BitRegister = true; [[fallthrough]];
-			case OpKind::RegMem16:
-			case OpKind::RegMem32:
-				return getRegisterOrMemoryOperand(buf, /* byte; */ false, mods);
+			case OpKind::RegMmxMem32:   return getRegisterOrMemoryOperand(buf, 64, 32, mods, RegKind::Vector);
+			case OpKind::RegMmxMem64:   return getRegisterOrMemoryOperand(buf, 64, 64, mods, RegKind::Vector);
 
-
-			case OpKind::Mem8:
-			case OpKind::Mem16:
-			case OpKind::Mem32:
-			case OpKind::Mem64:
-				return getMemoryOperand(buf, /* byte: */ kind == OpKind::Mem8, mods);
-
-			case OpKind::Mem128:    return getMemoryOperand(buf, /* byte: */ false, mods, /* bits: */ 128);
-			case OpKind::Mem256:    return getMemoryOperand(buf, /* byte: */ false, mods, /* bits: */ 256);
+			case OpKind::RegXmmMem32:   return getRegisterOrMemoryOperand(buf, 128, 32, mods, RegKind::Vector);
+			case OpKind::RegXmmMem64:   return getRegisterOrMemoryOperand(buf, 128, 64, mods, RegKind::Vector);
+			case OpKind::RegXmmMem128:  return getRegisterOrMemoryOperand(buf, 128, 128, mods, RegKind::Vector);
 
 
 			case OpKind::Imm8:
@@ -113,7 +97,7 @@ namespace instrad::x64
 			}
 
 			case OpKind::Memory:
-				return getMemoryOperand(buf, /* byte: */ false, mods);
+				return getMemoryOperand(buf, 0, mods);
 
 			case OpKind::ImplicitCS:   return regs::CS;
 			case OpKind::ImplicitDS:   return regs::DS;
@@ -139,10 +123,10 @@ namespace instrad::x64
 					return regs::EAX;
 			}
 
-			// the index for these special registers is always in modRM.rm
-			case OpKind::SegmentReg:   return getSegmentRegister(mods);
-			case OpKind::ControlReg:   return getControlRegister(mods);
-			case OpKind::DebugReg:     return getDebugRegister(mods);
+			// the index for these special registers is always in modRM.reg
+			case OpKind::SegmentReg:   return getRegisterOperand(16, mods, RegKind::Segment);
+			case OpKind::ControlReg:   return getRegisterOperand(64, mods, RegKind::Control);
+			case OpKind::DebugReg:     return getRegisterOperand(64, mods, RegKind::Debug);
 
 			case OpKind::MemoryOfs8:
 			case OpKind::MemoryOfs16:
@@ -160,30 +144,13 @@ namespace instrad::x64
 			}
 
 			// this is damn dumb
-			case OpKind::Reg32Mem16: {
-				auto ret = getRegisterOrMemoryOperand(buf, /* byte: */ false, mods);
-				if(ret.isMemory())
-					ret.mem().setBits(16);
-
-				return ret;
-			}
+			case OpKind::Reg32Mem16:
+				return getRegisterOrMemoryOperand(buf, 32, 16, mods, RegKind::GPR);
 
 
-			case OpKind::RegMmx_Rm:
-			case OpKind::RegXmm_Rm:
-
-			case OpKind::RegMmx:
-			case OpKind::RegMmxMem32:
-			case OpKind::RegMmxMem64:
-
-			case OpKind::RegXmm:
-			case OpKind::RegXmmMem32:
-			case OpKind::RegXmmMem64:
-			case OpKind::RegXmmMem128:
 
 			case OpKind::RegYmm:
 			case OpKind::RegYmmMem256:
-
 
 			case OpKind::Ptr16_16:
 			case OpKind::Ptr16_32:
@@ -346,6 +313,9 @@ namespace instrad::x64
 
 				else if(modifiers.operandSizeOverride)
 					prefixedTable = SecondaryOpcodeMap_F0_Prefix_66;
+
+				else
+					prefixedTable = SecondaryOpcodeMap_F0_Prefix_None;
 			}
 		}
 

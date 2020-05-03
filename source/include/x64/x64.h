@@ -198,11 +198,6 @@ namespace instrad::x64
 		// if true, we are in 32-bit mode; if false, then 64-bit mode.
 		bool compatibilityMode = false;
 
-		// some instructions (push, call, etc.) default to 64-bit operands in long-mode;
-		// set this flag so the register decoder will return eg. RAX instead of EAX, without
-		// needing REX.W to be present.
-		bool default64BitRegister = false;
-
 		// low nibble register index.
 		bool directRegisterIndex = false;
 
@@ -259,117 +254,66 @@ namespace instrad::x64
 		return (int64_t) ((a << 0) | (b << 8) | (c << 16) | (d << 24) | (e << 32) | (f << 40) | (g << 48) | (h << 56));
 	}
 
-	constexpr Register getSegmentRegister(const InstrModifiers& mods)
+	enum class RegKind
 	{
-		constexpr Register table[] = { regs::ES, regs::CS, regs::SS, regs::DS, regs::FS, regs::GS };
-		if(mods.modrm.reg > 5)
-			return regs::INVALID;
+		GPR,
+		Segment,
+		Control,
+		Debug,
+		Vector,
+	};
 
-		return table[mods.modrm.reg];
-	}
-
-	constexpr Register getControlRegister(const InstrModifiers& mods)
+	constexpr Register decodeRegisterNumber(size_t bits, const InstrModifiers& mods, int index, RegKind rk)
 	{
-		constexpr Register table[] = {
-			regs::CR0, regs::CR1, regs::CR2, regs::CR3, regs::CR4, regs::CR5, regs::CR6, regs::CR7,
-			regs::CR8, regs::CR9, regs::CR10, regs::CR11, regs::CR12, regs::CR13, regs::CR14, regs::CR15
-		};
-
-		auto idx = mods.modrm.reg | (mods.rex.R << 3);
-		if(idx > 15)
-			return regs::INVALID;
-
-		return table[idx];
-	}
-
-	constexpr Register getDebugRegister(const InstrModifiers& mods)
-	{
-		constexpr Register table[] = {
-			regs::DR0, regs::DR1, regs::DR2, regs::DR3, regs::DR4, regs::DR5, regs::DR6, regs::DR7,
-			regs::DR8, regs::DR9, regs::DR10, regs::DR11, regs::DR12, regs::DR13, regs::DR14, regs::DR15
-		};
-
-		auto idx = mods.modrm.reg | (mods.rex.R << 3);
-		if(idx > 15)
-			return regs::INVALID;
-
-		return table[idx];
-	}
-
-	constexpr Register decodeRegisterNumber(bool isByteMode, const InstrModifiers& mods, int index)
-	{
-		constexpr Register table_legacy_8[] = {
-			regs::AL, regs::CL, regs::DL, regs::BL, regs::AH, regs::CH, regs::DH, regs::BH
-		};
-
-		constexpr Register table_8[] = {
-			regs::AL, regs::CL, regs::DL, regs::BL, regs::SPL, regs::BPL, regs::SIL, regs::DIL,
-			regs::R8B, regs::R9B, regs::R10B, regs::R11B, regs::R12B, regs::R13B, regs::R14B, regs::R15B
-		};
-
-		constexpr Register table_16[] = {
-			regs::AX, regs::CX, regs::DX, regs::BX, regs::SP, regs::BP, regs::SI, regs::DI,
-			regs::R8W, regs::R9W, regs::R10W, regs::R11W, regs::R12W, regs::R13W, regs::R14W, regs::R15W
-		};
-
-		constexpr Register table_32[] = {
-			regs::EAX, regs::ECX, regs::EDX, regs::EBX, regs::ESP, regs::EBP, regs::ESI, regs::EDI,
-			regs::R8D, regs::R9D, regs::R10D, regs::R11D, regs::R12D, regs::R13D, regs::R14D, regs::R15D
-		};
-
-		constexpr Register table_64[] = {
-			regs::RAX, regs::RCX, regs::RDX, regs::RBX, regs::RSP, regs::RBP, regs::RSI, regs::RDI,
-			regs::R8, regs::R9, regs::R10, regs::R11, regs::R12, regs::R13, regs::R14, regs::R15
-		};
-
-
-		if(isByteMode)
+		// note: the regs::getX functions do the error checking for us,
+		// and returns INVALID if the index is out of bounds
+		if(rk == RegKind::GPR)
 		{
-			// if the REX is present, then we should use this set of registers:
-			if(mods.rex.present())
+			if(bits == 8)
 			{
-				if(index > 15)
-					return regs::INVALID;
+				// if the REX is present, then we should use this set of registers:
+				if(mods.rex.present())
+					return regs::get8Bit(index);
 
-				return table_8[index];
+				else
+					return regs::get8BitLegacy(index);
 			}
 			else
 			{
-				if(index > 7)
-					return regs::INVALID;
+				// if REX.W, then we have a 64-bit operand. this has precedence over
+				// the 0x66 operand size prefix, so check for this first.
+				if(mods.rex.W || bits == 64)
+					return regs::get64Bit(index);
 
-				// else use the other set.
-				return table_legacy_8[index];
+				else if(mods.operandSizeOverride)
+					return regs::get16Bit(index);
+
+				else
+					return regs::get32Bit(index);
 			}
+		}
+		else if(rk == RegKind::Segment)
+		{
+			return regs::getSegment(index);
+		}
+		else if(rk == RegKind::Control)
+		{
+			return regs::getControl(index);
+		}
+		else if(rk == RegKind::Debug)
+		{
+			return regs::getDebug(index);
 		}
 		else
 		{
-			// if REX.W, then we have a 64-bit operand. this has precedence over
-			// the 0x66 operand size prefix, so check for this first.
-			if(mods.rex.W || mods.default64BitRegister)
+			switch(bits)
 			{
-				if(index > 15)
-					return regs::INVALID;
-
-				return table_64[index];
-			}
-			else if(mods.operandSizeOverride)
-			{
-				if(index > 15)
-					return regs::INVALID;
-
-				// no REX.W, so 16-bit
-				return table_16[index];
-			}
-			else
-			{
-				if(index > 15)
-					return regs::INVALID;
-
-				// none of either prefix, so 32-bit.
-				return table_32[index];
+				case 64:    return regs::getMMX(index);
+				case 128:   return regs::getXMM(index);
 			}
 		}
+
+		return regs::INVALID;
 	}
 
 
@@ -449,39 +393,43 @@ namespace instrad::x64
 	}
 
 
-	constexpr Register getRegisterOperandFromModRM(Buffer& buf, bool isByteMode, const InstrModifiers& mods)
+	constexpr Register getRegisterOperandFromModRM(size_t bits, const InstrModifiers& mods, RegKind rk)
 	{
-		(void) buf;
-
-		return decodeRegisterNumber(isByteMode, mods, mods.modrm.rm | (mods.rex.B << 3));
+		return decodeRegisterNumber(bits, mods, mods.modrm.rm | (mods.rex.B << 3), rk);
 	}
 
-
-	constexpr Register getRegisterOperand(Buffer& buf, bool isByteMode, const InstrModifiers& mods)
+	constexpr Register getRegisterOperand(size_t bits, const InstrModifiers& mods, RegKind rk)
 	{
-		(void) buf;
-
 		if(mods.directRegisterIndex)
-		{
-			return decodeRegisterNumber(isByteMode, mods, (mods.opcode & 0x07) | (mods.rex.B << 3));
-		}
+			return decodeRegisterNumber(bits, mods, (mods.opcode & 0x07) | (mods.rex.B << 3), rk);
+
 		else
+			return decodeRegisterNumber(bits, mods, mods.modrm.reg | (mods.rex.R << 3), rk);
+	}
+
+	constexpr Register getSegmentOfOverride(int override)
+	{
+		switch(override)
 		{
-			return decodeRegisterNumber(isByteMode, mods, mods.modrm.reg | (mods.rex.R << 3));
+			case InstrModifiers::SEG_CS: return regs::CS;
+			case InstrModifiers::SEG_DS: return regs::DS;
+			case InstrModifiers::SEG_ES: return regs::ES;
+			case InstrModifiers::SEG_FS: return regs::FS;
+			case InstrModifiers::SEG_GS: return regs::GS;
+			case InstrModifiers::SEG_SS: return regs::SS;
+
+			default: return regs::NONE;
 		}
 	}
 
-	constexpr MemoryRef getMemoryOperand(Buffer& buf, bool isByteMode, const InstrModifiers& mods, int _bits = 0)
+	constexpr MemoryRef getMemoryOperand(Buffer& buf, size_t bits, const InstrModifiers& mods)
 	{
-		int bits = (_bits != 0) ? _bits : (
-			isByteMode
-				? 8
-				: mods.operandSizeOverride
-					? 16
-					: mods.rex.W
-						? 64
-						: 32
-		);
+		// we need to handle "promotion".
+		if(bits == 32 && mods.rex.W)
+			bits = 64;
+
+		else if(bits == 32 && mods.operandSizeOverride)
+			bits = 16;
 
 		// lazy to refactor this, so just wrap it in a lambda so we can extract the return value
 
@@ -612,36 +560,26 @@ namespace instrad::x64
 			return MemoryRef();
 		};
 
-		auto ret = wrapper();
-		switch(mods.segmentOverride)
-		{
-			case InstrModifiers::SEG_CS: return ret.setSegment(regs::CS);
-			case InstrModifiers::SEG_DS: return ret.setSegment(regs::DS);
-			case InstrModifiers::SEG_ES: return ret.setSegment(regs::ES);
-			case InstrModifiers::SEG_FS: return ret.setSegment(regs::FS);
-			case InstrModifiers::SEG_GS: return ret.setSegment(regs::GS);
-			case InstrModifiers::SEG_SS: return ret.setSegment(regs::SS);
-
-			default:
-				return ret;
-		}
+		return wrapper()
+			.setSegment(getSegmentOfOverride(mods.segmentOverride));
 	}
 
-	constexpr Operand getRegisterOrMemoryOperand(Buffer& buf, bool isByteMode, const InstrModifiers& mods)
+	constexpr Operand getRegisterOrMemoryOperand(Buffer& buf, size_t regBits, size_t memBits, const InstrModifiers& mods, RegKind rk)
 	{
 		if(mods.directRegisterIndex)
 		{
 			auto idx = (mods.opcode & 0x0F) | (mods.rex.B << 3);
-			return decodeRegisterNumber(/* byte: */ false, mods, idx);
+			return decodeRegisterNumber(regBits, mods, idx, rk);
 		}
 		else if(mods.modrm.mod != 3)
 		{
-			return getMemoryOperand(buf, isByteMode, mods);
+			return getMemoryOperand(buf, memBits, mods);
 		}
 		else if(mods.modrm.mod == 3)
 		{
 			// not the same as the one above -- this uses the modrm.rm field, not the modrm.reg field.
-			return decodeRegisterNumber(isByteMode, mods, mods.modrm.rm | (mods.rex.B << 3));
+			auto idx = mods.modrm.rm | (mods.rex.B << 3);
+			return decodeRegisterNumber(regBits, mods, idx, rk);
 		}
 
 		// return a poison value
