@@ -32,8 +32,9 @@ namespace instrad::x64
 		constexpr int REG_FLAG_SEGMENT  = 0x0100;
 		constexpr int REG_FLAG_CONTROL  = 0x0200;
 		constexpr int REG_FLAG_DEBUG    = 0x0400;
-		constexpr int REG_FLAG_MMX      = 0x0800;
-		constexpr int REG_FLAG_SSE      = 0x1000;
+		constexpr int REG_FLAG_X87      = 0x0800;
+		constexpr int REG_FLAG_MMX      = 0x1000;
+		constexpr int REG_FLAG_SSE      = 0x2000;
 
 		constexpr auto  AL      = Register(0,  8,  "al");
 		constexpr auto  AH      = Register(0,  8,  "ah");
@@ -120,94 +121,102 @@ namespace instrad::x64
 		constexpr auto R15      = Register(15, 64, "r15");
 
 		// not a real register that you can use, but we need to be able to represent this.
-		constexpr auto  IP      = Register(REG_FLAG_IP | 0x00, 16,  "ip");
-		constexpr auto EIP      = Register(REG_FLAG_IP | 0x00, 32, "eip");
-		constexpr auto RIP      = Register(REG_FLAG_IP | 0x00, 64, "rip");
+		constexpr auto  IP      = Register(REG_FLAG_IP | 0, 16,  "ip");
+		constexpr auto EIP      = Register(REG_FLAG_IP | 0, 32, "eip");
+		constexpr auto RIP      = Register(REG_FLAG_IP | 0, 64, "rip");
 
-		constexpr auto CS       = Register(REG_FLAG_SEGMENT | 0x00, 16, "cs");
-		constexpr auto DS       = Register(REG_FLAG_SEGMENT | 0x01, 16, "ds");
-		constexpr auto ES       = Register(REG_FLAG_SEGMENT | 0x02, 16, "es");
-		constexpr auto FS       = Register(REG_FLAG_SEGMENT | 0x03, 16, "fs");
-		constexpr auto GS       = Register(REG_FLAG_SEGMENT | 0x04, 16, "gs");
-		constexpr auto SS       = Register(REG_FLAG_SEGMENT | 0x05, 16, "ss");
+		constexpr auto CS       = Register(REG_FLAG_SEGMENT | 0, 16, "cs");
+		constexpr auto DS       = Register(REG_FLAG_SEGMENT | 1, 16, "ds");
+		constexpr auto ES       = Register(REG_FLAG_SEGMENT | 2, 16, "es");
+		constexpr auto FS       = Register(REG_FLAG_SEGMENT | 3, 16, "fs");
+		constexpr auto GS       = Register(REG_FLAG_SEGMENT | 4, 16, "gs");
+		constexpr auto SS       = Register(REG_FLAG_SEGMENT | 5, 16, "ss");
 
-		constexpr auto CR0      = Register(REG_FLAG_CONTROL | 0x00, 64, "cr0");
-		constexpr auto CR1      = Register(REG_FLAG_CONTROL | 0x01, 64, "cr1");
-		constexpr auto CR2      = Register(REG_FLAG_CONTROL | 0x02, 64, "cr2");
-		constexpr auto CR3      = Register(REG_FLAG_CONTROL | 0x03, 64, "cr3");
-		constexpr auto CR4      = Register(REG_FLAG_CONTROL | 0x04, 64, "cr4");
-		constexpr auto CR5      = Register(REG_FLAG_CONTROL | 0x05, 64, "cr5");
-		constexpr auto CR6      = Register(REG_FLAG_CONTROL | 0x06, 64, "cr6");
-		constexpr auto CR7      = Register(REG_FLAG_CONTROL | 0x07, 64, "cr7");
-		constexpr auto CR8      = Register(REG_FLAG_CONTROL | 0x08, 64, "cr8");
-		constexpr auto CR9      = Register(REG_FLAG_CONTROL | 0x09, 64, "cr9");
-		constexpr auto CR10     = Register(REG_FLAG_CONTROL | 0x0A, 64, "cr10");
-		constexpr auto CR11     = Register(REG_FLAG_CONTROL | 0x0B, 64, "cr11");
-		constexpr auto CR12     = Register(REG_FLAG_CONTROL | 0x0C, 64, "cr12");
-		constexpr auto CR13     = Register(REG_FLAG_CONTROL | 0x0D, 64, "cr13");
-		constexpr auto CR14     = Register(REG_FLAG_CONTROL | 0x0E, 64, "cr14");
-		constexpr auto CR15     = Register(REG_FLAG_CONTROL | 0x0F, 64, "cr15");
+		constexpr auto CR0      = Register(REG_FLAG_CONTROL |  0, 64, "cr0");
+		constexpr auto CR1      = Register(REG_FLAG_CONTROL |  1, 64, "cr1");
+		constexpr auto CR2      = Register(REG_FLAG_CONTROL |  2, 64, "cr2");
+		constexpr auto CR3      = Register(REG_FLAG_CONTROL |  3, 64, "cr3");
+		constexpr auto CR4      = Register(REG_FLAG_CONTROL |  4, 64, "cr4");
+		constexpr auto CR5      = Register(REG_FLAG_CONTROL |  5, 64, "cr5");
+		constexpr auto CR6      = Register(REG_FLAG_CONTROL |  6, 64, "cr6");
+		constexpr auto CR7      = Register(REG_FLAG_CONTROL |  7, 64, "cr7");
+		constexpr auto CR8      = Register(REG_FLAG_CONTROL |  8, 64, "cr8");
+		constexpr auto CR9      = Register(REG_FLAG_CONTROL |  9, 64, "cr9");
+		constexpr auto CR10     = Register(REG_FLAG_CONTROL | 10, 64, "cr10");
+		constexpr auto CR11     = Register(REG_FLAG_CONTROL | 11, 64, "cr11");
+		constexpr auto CR12     = Register(REG_FLAG_CONTROL | 12, 64, "cr12");
+		constexpr auto CR13     = Register(REG_FLAG_CONTROL | 13, 64, "cr13");
+		constexpr auto CR14     = Register(REG_FLAG_CONTROL | 14, 64, "cr14");
+		constexpr auto CR15     = Register(REG_FLAG_CONTROL | 15, 64, "cr15");
 
-		constexpr auto DR0      = Register(REG_FLAG_DEBUG | 0x00, 64, "dr0");
-		constexpr auto DR1      = Register(REG_FLAG_DEBUG | 0x01, 64, "dr1");
-		constexpr auto DR2      = Register(REG_FLAG_DEBUG | 0x02, 64, "dr2");
-		constexpr auto DR3      = Register(REG_FLAG_DEBUG | 0x03, 64, "dr3");
-		constexpr auto DR4      = Register(REG_FLAG_DEBUG | 0x04, 64, "dr4");
-		constexpr auto DR5      = Register(REG_FLAG_DEBUG | 0x05, 64, "dr5");
-		constexpr auto DR6      = Register(REG_FLAG_DEBUG | 0x06, 64, "dr6");
-		constexpr auto DR7      = Register(REG_FLAG_DEBUG | 0x07, 64, "dr7");
-		constexpr auto DR8      = Register(REG_FLAG_DEBUG | 0x08, 64, "dr8");
-		constexpr auto DR9      = Register(REG_FLAG_DEBUG | 0x09, 64, "dr9");
-		constexpr auto DR10     = Register(REG_FLAG_DEBUG | 0x0A, 64, "dr10");
-		constexpr auto DR11     = Register(REG_FLAG_DEBUG | 0x0B, 64, "dr11");
-		constexpr auto DR12     = Register(REG_FLAG_DEBUG | 0x0C, 64, "dr12");
-		constexpr auto DR13     = Register(REG_FLAG_DEBUG | 0x0D, 64, "dr13");
-		constexpr auto DR14     = Register(REG_FLAG_DEBUG | 0x0E, 64, "dr14");
-		constexpr auto DR15     = Register(REG_FLAG_DEBUG | 0x0F, 64, "dr15");
+		constexpr auto DR0      = Register(REG_FLAG_DEBUG |  0, 64, "dr0");
+		constexpr auto DR1      = Register(REG_FLAG_DEBUG |  1, 64, "dr1");
+		constexpr auto DR2      = Register(REG_FLAG_DEBUG |  2, 64, "dr2");
+		constexpr auto DR3      = Register(REG_FLAG_DEBUG |  3, 64, "dr3");
+		constexpr auto DR4      = Register(REG_FLAG_DEBUG |  4, 64, "dr4");
+		constexpr auto DR5      = Register(REG_FLAG_DEBUG |  5, 64, "dr5");
+		constexpr auto DR6      = Register(REG_FLAG_DEBUG |  6, 64, "dr6");
+		constexpr auto DR7      = Register(REG_FLAG_DEBUG |  7, 64, "dr7");
+		constexpr auto DR8      = Register(REG_FLAG_DEBUG |  8, 64, "dr8");
+		constexpr auto DR9      = Register(REG_FLAG_DEBUG |  9, 64, "dr9");
+		constexpr auto DR10     = Register(REG_FLAG_DEBUG | 10, 64, "dr10");
+		constexpr auto DR11     = Register(REG_FLAG_DEBUG | 11, 64, "dr11");
+		constexpr auto DR12     = Register(REG_FLAG_DEBUG | 12, 64, "dr12");
+		constexpr auto DR13     = Register(REG_FLAG_DEBUG | 13, 64, "dr13");
+		constexpr auto DR14     = Register(REG_FLAG_DEBUG | 14, 64, "dr14");
+		constexpr auto DR15     = Register(REG_FLAG_DEBUG | 15, 64, "dr15");
 
+		constexpr auto ST0      = Register(REG_FLAG_X87 | 0, 80, "st0");
+		constexpr auto ST1      = Register(REG_FLAG_X87 | 1, 80, "st1");
+		constexpr auto ST2      = Register(REG_FLAG_X87 | 2, 80, "st2");
+		constexpr auto ST3      = Register(REG_FLAG_X87 | 3, 80, "st3");
+		constexpr auto ST4      = Register(REG_FLAG_X87 | 4, 80, "st4");
+		constexpr auto ST5      = Register(REG_FLAG_X87 | 5, 80, "st5");
+		constexpr auto ST6      = Register(REG_FLAG_X87 | 6, 80, "st6");
+		constexpr auto ST7      = Register(REG_FLAG_X87 | 7, 80, "st7");
 
-		constexpr auto MMX0     = Register(REG_FLAG_MMX | 0x00, 64, "mmx0");
-		constexpr auto MMX1     = Register(REG_FLAG_MMX | 0x01, 64, "mmx1");
-		constexpr auto MMX2     = Register(REG_FLAG_MMX | 0x02, 64, "mmx2");
-		constexpr auto MMX3     = Register(REG_FLAG_MMX | 0x03, 64, "mmx3");
-		constexpr auto MMX4     = Register(REG_FLAG_MMX | 0x04, 64, "mmx4");
-		constexpr auto MMX5     = Register(REG_FLAG_MMX | 0x05, 64, "mmx5");
-		constexpr auto MMX6     = Register(REG_FLAG_MMX | 0x06, 64, "mmx6");
-		constexpr auto MMX7     = Register(REG_FLAG_MMX | 0x07, 64, "mmx7");
+		constexpr auto MMX0     = Register(REG_FLAG_MMX | 0, 64, "mmx0");
+		constexpr auto MMX1     = Register(REG_FLAG_MMX | 1, 64, "mmx1");
+		constexpr auto MMX2     = Register(REG_FLAG_MMX | 2, 64, "mmx2");
+		constexpr auto MMX3     = Register(REG_FLAG_MMX | 3, 64, "mmx3");
+		constexpr auto MMX4     = Register(REG_FLAG_MMX | 4, 64, "mmx4");
+		constexpr auto MMX5     = Register(REG_FLAG_MMX | 5, 64, "mmx5");
+		constexpr auto MMX6     = Register(REG_FLAG_MMX | 6, 64, "mmx6");
+		constexpr auto MMX7     = Register(REG_FLAG_MMX | 7, 64, "mmx7");
 
-		constexpr auto XMM0     = Register(REG_FLAG_SSE | 0x00, 128, "xmm0");
-		constexpr auto XMM1     = Register(REG_FLAG_SSE | 0x01, 128, "xmm1");
-		constexpr auto XMM2     = Register(REG_FLAG_SSE | 0x02, 128, "xmm2");
-		constexpr auto XMM3     = Register(REG_FLAG_SSE | 0x03, 128, "xmm3");
-		constexpr auto XMM4     = Register(REG_FLAG_SSE | 0x04, 128, "xmm4");
-		constexpr auto XMM5     = Register(REG_FLAG_SSE | 0x05, 128, "xmm5");
-		constexpr auto XMM6     = Register(REG_FLAG_SSE | 0x06, 128, "xmm6");
-		constexpr auto XMM7     = Register(REG_FLAG_SSE | 0x07, 128, "xmm7");
-		constexpr auto XMM8     = Register(REG_FLAG_SSE | 0x08, 128, "xmm8");
-		constexpr auto XMM9     = Register(REG_FLAG_SSE | 0x09, 128, "xmm9");
-		constexpr auto XMM10    = Register(REG_FLAG_SSE | 0x0A, 128, "xmm10");
-		constexpr auto XMM11    = Register(REG_FLAG_SSE | 0x0B, 128, "xmm11");
-		constexpr auto XMM12    = Register(REG_FLAG_SSE | 0x0C, 128, "xmm12");
-		constexpr auto XMM13    = Register(REG_FLAG_SSE | 0x0D, 128, "xmm13");
-		constexpr auto XMM14    = Register(REG_FLAG_SSE | 0x0E, 128, "xmm14");
-		constexpr auto XMM15    = Register(REG_FLAG_SSE | 0x0F, 128, "xmm15");
+		constexpr auto XMM0     = Register(REG_FLAG_SSE |  0, 128, "xmm0");
+		constexpr auto XMM1     = Register(REG_FLAG_SSE |  1, 128, "xmm1");
+		constexpr auto XMM2     = Register(REG_FLAG_SSE |  2, 128, "xmm2");
+		constexpr auto XMM3     = Register(REG_FLAG_SSE |  3, 128, "xmm3");
+		constexpr auto XMM4     = Register(REG_FLAG_SSE |  4, 128, "xmm4");
+		constexpr auto XMM5     = Register(REG_FLAG_SSE |  5, 128, "xmm5");
+		constexpr auto XMM6     = Register(REG_FLAG_SSE |  6, 128, "xmm6");
+		constexpr auto XMM7     = Register(REG_FLAG_SSE |  7, 128, "xmm7");
+		constexpr auto XMM8     = Register(REG_FLAG_SSE |  8, 128, "xmm8");
+		constexpr auto XMM9     = Register(REG_FLAG_SSE |  9, 128, "xmm9");
+		constexpr auto XMM10    = Register(REG_FLAG_SSE | 10, 128, "xmm10");
+		constexpr auto XMM11    = Register(REG_FLAG_SSE | 11, 128, "xmm11");
+		constexpr auto XMM12    = Register(REG_FLAG_SSE | 12, 128, "xmm12");
+		constexpr auto XMM13    = Register(REG_FLAG_SSE | 13, 128, "xmm13");
+		constexpr auto XMM14    = Register(REG_FLAG_SSE | 14, 128, "xmm14");
+		constexpr auto XMM15    = Register(REG_FLAG_SSE | 15, 128, "xmm15");
 
-		constexpr auto YMM0     = Register(REG_FLAG_SSE | 0x00, 256, "ymm0");
-		constexpr auto YMM1     = Register(REG_FLAG_SSE | 0x01, 256, "ymm1");
-		constexpr auto YMM2     = Register(REG_FLAG_SSE | 0x02, 256, "ymm2");
-		constexpr auto YMM3     = Register(REG_FLAG_SSE | 0x03, 256, "ymm3");
-		constexpr auto YMM4     = Register(REG_FLAG_SSE | 0x04, 256, "ymm4");
-		constexpr auto YMM5     = Register(REG_FLAG_SSE | 0x05, 256, "ymm5");
-		constexpr auto YMM6     = Register(REG_FLAG_SSE | 0x06, 256, "ymm6");
-		constexpr auto YMM7     = Register(REG_FLAG_SSE | 0x07, 256, "ymm7");
-		constexpr auto YMM8     = Register(REG_FLAG_SSE | 0x08, 256, "ymm8");
-		constexpr auto YMM9     = Register(REG_FLAG_SSE | 0x09, 256, "ymm9");
-		constexpr auto YMM10    = Register(REG_FLAG_SSE | 0x0A, 256, "ymm10");
-		constexpr auto YMM11    = Register(REG_FLAG_SSE | 0x0B, 256, "ymm11");
-		constexpr auto YMM12    = Register(REG_FLAG_SSE | 0x0C, 256, "ymm12");
-		constexpr auto YMM13    = Register(REG_FLAG_SSE | 0x0D, 256, "ymm13");
-		constexpr auto YMM14    = Register(REG_FLAG_SSE | 0x0E, 256, "ymm14");
-		constexpr auto YMM15    = Register(REG_FLAG_SSE | 0x0F, 256, "ymm15");
+		constexpr auto YMM0     = Register(REG_FLAG_SSE |  0, 256, "ymm0");
+		constexpr auto YMM1     = Register(REG_FLAG_SSE |  1, 256, "ymm1");
+		constexpr auto YMM2     = Register(REG_FLAG_SSE |  2, 256, "ymm2");
+		constexpr auto YMM3     = Register(REG_FLAG_SSE |  3, 256, "ymm3");
+		constexpr auto YMM4     = Register(REG_FLAG_SSE |  4, 256, "ymm4");
+		constexpr auto YMM5     = Register(REG_FLAG_SSE |  5, 256, "ymm5");
+		constexpr auto YMM6     = Register(REG_FLAG_SSE |  6, 256, "ymm6");
+		constexpr auto YMM7     = Register(REG_FLAG_SSE |  7, 256, "ymm7");
+		constexpr auto YMM8     = Register(REG_FLAG_SSE |  8, 256, "ymm8");
+		constexpr auto YMM9     = Register(REG_FLAG_SSE |  9, 256, "ymm9");
+		constexpr auto YMM10    = Register(REG_FLAG_SSE | 10, 256, "ymm10");
+		constexpr auto YMM11    = Register(REG_FLAG_SSE | 11, 256, "ymm11");
+		constexpr auto YMM12    = Register(REG_FLAG_SSE | 12, 256, "ymm12");
+		constexpr auto YMM13    = Register(REG_FLAG_SSE | 13, 256, "ymm13");
+		constexpr auto YMM14    = Register(REG_FLAG_SSE | 14, 256, "ymm14");
+		constexpr auto YMM15    = Register(REG_FLAG_SSE | 15, 256, "ymm15");
 
 
 
@@ -259,6 +268,10 @@ namespace instrad::x64
 			regs::DR8, regs::DR9, regs::DR10, regs::DR11, regs::DR12, regs::DR13, regs::DR14, regs::DR15
 		};
 
+		constexpr Register RegisterTable_x87[] = {
+			regs::ST0, regs::ST1, regs::ST2, regs::ST3, regs::ST4, regs::ST5, regs::ST6, regs::ST7
+		};
+
 		constexpr Register RegisterTable_MMX[] = {
 			regs::MMX0, regs::MMX1, regs::MMX2, regs::MMX3, regs::MMX4, regs::MMX5, regs::MMX6, regs::MMX7
 		};
@@ -283,6 +296,7 @@ namespace instrad::x64
 		static_assert(ArrayLength(RegisterTable_Segment) == 6, "invalid register table");
 		static_assert(ArrayLength(RegisterTable_Control) == 16, "invalid register table");
 		static_assert(ArrayLength(RegisterTable_Debug) == 16, "invalid register table");
+		static_assert(ArrayLength(RegisterTable_x87) == 8, "invalid register table");
 		static_assert(ArrayLength(RegisterTable_MMX) == 8, "invalid register table");
 		static_assert(ArrayLength(RegisterTable_XMM) == 16, "invalid register table");
 
@@ -301,6 +315,7 @@ namespace instrad::x64
 		constexpr Register getSegment(size_t idx)       { return __getOrInvalid(RegisterTable_Segment, idx); }
 		constexpr Register getControl(size_t idx)       { return __getOrInvalid(RegisterTable_Control, idx); }
 		constexpr Register getDebug(size_t idx)         { return __getOrInvalid(RegisterTable_Debug, idx); }
+		constexpr Register getX87(size_t idx)           { return __getOrInvalid(RegisterTable_x87, idx); }
 		constexpr Register getMMX(size_t idx)           { return __getOrInvalid(RegisterTable_MMX, idx); }
 		constexpr Register getXMM(size_t idx)           { return __getOrInvalid(RegisterTable_XMM, idx); }
 	}

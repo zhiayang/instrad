@@ -16,6 +16,7 @@ namespace instrad::x64
 		Control,
 		Debug,
 		Vector,
+		X87,
 	};
 
 	constexpr Register decodeRegisterNumber(size_t bits, const InstrModifiers& mods, int index, RegKind rk)
@@ -59,6 +60,10 @@ namespace instrad::x64
 		{
 			return regs::getDebug(index);
 		}
+		else if(rk == RegKind::X87)
+		{
+			return regs::getX87(index);
+		}
 		else
 		{
 			switch(bits)
@@ -85,6 +90,7 @@ namespace instrad::x64
 		} sib;
 
 		sib.byte = buf.pop();
+		auto compat = mods.compatibilityMode;
 
 		auto mem = MemoryRef();
 
@@ -98,13 +104,13 @@ namespace instrad::x64
 			}
 			else if(mods.modrm.mod() == 1)
 			{
-				mem.setBase(mods.rex.B() ? regs::R13 : regs::RBP);
+				mem.setBase(mods.rex.B() ? regs::R13 : ((compat || mods.addressSizeOverride) ? regs::EBP : regs::RBP));
 				mem.setDisplacement(readSignedImm8(buf));
 				*didReadDisplacement = true;
 			}
 			else if(mods.modrm.mod() == 2)
 			{
-				mem.setBase(mods.rex.B() ? regs::R13 : regs::RBP);
+				mem.setBase(mods.rex.B() ? regs::R13 : ((compat || mods.addressSizeOverride) ? regs::EBP : regs::RBP));
 				mem.setDisplacement(readSignedImm32(buf));
 				*didReadDisplacement = true;
 			}
@@ -115,33 +121,18 @@ namespace instrad::x64
 		}
 		else
 		{
-			switch(sib.base)
-			{
-				case 0: mem.setBase(mods.rex.B() ? regs::R8  : regs::RAX); break;
-				case 1: mem.setBase(mods.rex.B() ? regs::R9  : regs::RCX); break;
-				case 2: mem.setBase(mods.rex.B() ? regs::R10 : regs::RDX); break;
-				case 3: mem.setBase(mods.rex.B() ? regs::R11 : regs::RBX); break;
-				case 4: mem.setBase(mods.rex.B() ? regs::R12 : regs::RSP); break;
-				case 6: mem.setBase(mods.rex.B() ? regs::R14 : regs::RSI); break;
-				case 7: mem.setBase(mods.rex.B() ? regs::R15 : regs::RDI); break;
-
-				default: mem.setBase(regs::INVALID); break;
-			}
+			mem.setBase((compat || mods.addressSizeOverride)
+				? regs::get32Bit(sib.base)
+				: regs::get64Bit(sib.base | (mods.rex.B() << 3))
+			);
 		}
 
-		switch(sib.index)
-		{
-			case 0: mem.setIndex(mods.rex.X() ? regs::R8  : regs::RAX);  break;
-			case 1: mem.setIndex(mods.rex.X() ? regs::R9  : regs::RCX);  break;
-			case 2: mem.setIndex(mods.rex.X() ? regs::R10 : regs::RDX);  break;
-			case 3: mem.setIndex(mods.rex.X() ? regs::R11 : regs::RBX);  break;
-			case 4: mem.setIndex(mods.rex.X() ? regs::R12 : regs::NONE); break;   // apparently you can't use RSP as an index
-			case 5: mem.setIndex(mods.rex.X() ? regs::R13 : regs::RBP);  break;
-			case 6: mem.setIndex(mods.rex.X() ? regs::R14 : regs::RSI);  break;
-			case 7: mem.setIndex(mods.rex.X() ? regs::R15 : regs::RDI);  break;
-
-			default: mem.setIndex(regs::INVALID); break;
-		}
+		auto idxIdx = sib.index | (mods.rex.B() << 3);
+		mem.setIndex((compat || mods.addressSizeOverride)
+			? regs::get32Bit(sib.index)
+			// you can't use RSP as an index
+			: (idxIdx == 4 ? regs::NONE : regs::get64Bit(idxIdx))
+		);
 
 		mem.setScale(1 << sib.scale);
 		return mem;
@@ -186,8 +177,11 @@ namespace instrad::x64
 		else if(bits == 32 && mods.operandSizeOverride)
 			bits = 16;
 
-		// lazy to refactor this, so just wrap it in a lambda so we can extract the return value
+		// the size of the registers used (base/index)
+		bool compat = mods.compatibilityMode;
+		auto baseRegIndex = (mods.modrm.rm() | (mods.rex.B() << 3));
 
+		// lazy to refactor this, so just wrap it in a lambda so we can extract the return value
 		auto wrapper = [&]() -> auto {
 			if(mods.modrm.mod() == 0)
 			{
@@ -208,26 +202,27 @@ namespace instrad::x64
 				}
 				else
 				{
-					// 32/64 bit addressing. we test REX.B inline here.
-					switch(mods.modrm.rm())
+					if(mods.modrm.rm() == 4)
 					{
-						case 0:  return MemoryRef(bits, mods.rex.B() ? regs::R8  : regs::RAX);
-						case 1:  return MemoryRef(bits, mods.rex.B() ? regs::R9  : regs::RCX);
-						case 2:  return MemoryRef(bits, mods.rex.B() ? regs::R10 : regs::RDX);
-						case 3:  return MemoryRef(bits, mods.rex.B() ? regs::R11 : regs::RBX);
-
+						bool dummy = false;
+						return decodeSIB(buf, mods, &dummy).setBits(bits);
+					}
+					else if(mods.modrm.rm() == 5)
+					{
 						// in 64-bit mode, this becomes rip-relative addressing. if not, it is just disp32.
-						case 5:  return !mods.compatibilityMode ? MemoryRef(bits, regs::RIP, readSignedImm32(buf))
-																	: MemoryRef(bits, readSignedImm32(buf));
+						if(compat)
+							return MemoryRef(bits, readSignedImm32(buf));
 
-						case 6:  return MemoryRef(bits, mods.rex.B() ? regs::R14 : regs::RSI);
-						case 7:  return MemoryRef(bits, mods.rex.B() ? regs::R15 : regs::RDI);
+						else
+							return MemoryRef(bits, regs::RIP, readSignedImm32(buf));
+					}
+					else
+					{
+						if(compat || mods.addressSizeOverride)
+							return MemoryRef(bits, regs::get32Bit(baseRegIndex));
 
-						// SIB madness
-						case 4: {
-							bool dummy = false;
-							return decodeSIB(buf, mods, &dummy).setBits(bits);
-						}
+						else
+							return MemoryRef(bits, regs::get64Bit(baseRegIndex));
 					}
 				}
 			}
@@ -236,38 +231,38 @@ namespace instrad::x64
 				// if 16-bit addressing:
 				if(mods.legacyAddressingMode && mods.addressSizeOverride)
 				{
+					auto imm = readSignedImm8(buf);
 					switch(mods.modrm.rm())
 					{
-						case 0: return MemoryRef(bits, regs::BX, regs::SI, 0, readSignedImm8(buf));
-						case 1: return MemoryRef(bits, regs::BX, regs::DI, 0, readSignedImm8(buf));
-						case 2: return MemoryRef(bits, regs::BP, regs::SI, 0, readSignedImm8(buf));
-						case 3: return MemoryRef(bits, regs::BP, regs::DI, 0, readSignedImm8(buf));
-						case 4: return MemoryRef(bits, regs::SI, readSignedImm8(buf));
-						case 5: return MemoryRef(bits, regs::DI, readSignedImm8(buf));
-						case 6: return MemoryRef(bits, regs::BP, readSignedImm8(buf));
-						case 7: return MemoryRef(bits, regs::BX, readSignedImm8(buf));
+						case 0: return MemoryRef(bits, regs::BX, regs::SI, 0, imm);
+						case 1: return MemoryRef(bits, regs::BX, regs::DI, 0, imm);
+						case 2: return MemoryRef(bits, regs::BP, regs::SI, 0, imm);
+						case 3: return MemoryRef(bits, regs::BP, regs::DI, 0, imm);
+						case 4: return MemoryRef(bits, regs::SI, imm);
+						case 5: return MemoryRef(bits, regs::DI, imm);
+						case 6: return MemoryRef(bits, regs::BP, imm);
+						case 7: return MemoryRef(bits, regs::BX, imm);
 					}
 				}
 				else
 				{
-					// 32/64 bit addressing
-					switch(mods.modrm.rm())
+					if(mods.modrm.rm() == 4)
 					{
-						case 0:  return MemoryRef(bits, mods.rex.B() ? regs::R8  : regs::RAX, readSignedImm8(buf));
-						case 1:  return MemoryRef(bits, mods.rex.B() ? regs::R9  : regs::RCX, readSignedImm8(buf));
-						case 2:  return MemoryRef(bits, mods.rex.B() ? regs::R10 : regs::RDX, readSignedImm8(buf));
-						case 3:  return MemoryRef(bits, mods.rex.B() ? regs::R11 : regs::RBX, readSignedImm8(buf));
-						case 5:  return MemoryRef(bits, mods.rex.B() ? regs::R13 : regs::RBP, readSignedImm8(buf));
-						case 6:  return MemoryRef(bits, mods.rex.B() ? regs::R14 : regs::RSI, readSignedImm8(buf));
-						case 7:  return MemoryRef(bits, mods.rex.B() ? regs::R15 : regs::RDI, readSignedImm8(buf));
+						bool disp = false;
+						auto ret = decodeSIB(buf, mods, &disp).setBits(bits);
+						if(!disp) ret.setDisplacement(readSignedImm8(buf));
 
-						case 4: {
-							bool disp = false;
-							auto ret = decodeSIB(buf, mods, &disp).setBits(bits);
-							if(!disp) ret.setDisplacement(readSignedImm8(buf));
+						return ret;
+					}
+					else
+					{
+						auto imm = readSignedImm8(buf);
 
-							return ret;
-						}
+						if(compat || mods.addressSizeOverride)
+							return MemoryRef(bits, regs::get32Bit(baseRegIndex), imm);
+
+						else
+							return MemoryRef(bits, regs::get64Bit(baseRegIndex), imm);
 					}
 				}
 			}
@@ -276,38 +271,38 @@ namespace instrad::x64
 				// if 16-bit addressing:
 				if(mods.legacyAddressingMode && mods.addressSizeOverride)
 				{
+					auto imm = readSignedImm16(buf);
 					switch(mods.modrm.rm())
 					{
-						case 0: return MemoryRef(bits, regs::BX, regs::SI, 0, readSignedImm16(buf));
-						case 1: return MemoryRef(bits, regs::BX, regs::DI, 0, readSignedImm16(buf));
-						case 2: return MemoryRef(bits, regs::BP, regs::SI, 0, readSignedImm16(buf));
-						case 3: return MemoryRef(bits, regs::BP, regs::DI, 0, readSignedImm16(buf));
-						case 4: return MemoryRef(bits, regs::SI, readSignedImm16(buf));
-						case 5: return MemoryRef(bits, regs::DI, readSignedImm16(buf));
-						case 6: return MemoryRef(bits, regs::BP, readSignedImm16(buf));
-						case 7: return MemoryRef(bits, regs::BX, readSignedImm16(buf));
+						case 0: return MemoryRef(bits, regs::BX, regs::SI, 0, imm);
+						case 1: return MemoryRef(bits, regs::BX, regs::DI, 0, imm);
+						case 2: return MemoryRef(bits, regs::BP, regs::SI, 0, imm);
+						case 3: return MemoryRef(bits, regs::BP, regs::DI, 0, imm);
+						case 4: return MemoryRef(bits, regs::SI, imm);
+						case 5: return MemoryRef(bits, regs::DI, imm);
+						case 6: return MemoryRef(bits, regs::BP, imm);
+						case 7: return MemoryRef(bits, regs::BX, imm);
 					}
 				}
 				else
 				{
-					// 32/64 bit addressing
-					switch(mods.modrm.rm())
+					if(mods.modrm.rm() == 4)
 					{
-						case 0:  return MemoryRef(bits, mods.rex.B() ? regs::R8  : regs::RAX, readSignedImm32(buf));
-						case 1:  return MemoryRef(bits, mods.rex.B() ? regs::R9  : regs::RCX, readSignedImm32(buf));
-						case 2:  return MemoryRef(bits, mods.rex.B() ? regs::R10 : regs::RDX, readSignedImm32(buf));
-						case 3:  return MemoryRef(bits, mods.rex.B() ? regs::R11 : regs::RBX, readSignedImm32(buf));
-						case 5:  return MemoryRef(bits, mods.rex.B() ? regs::R13 : regs::RBP, readSignedImm32(buf));
-						case 6:  return MemoryRef(bits, mods.rex.B() ? regs::R14 : regs::RSI, readSignedImm32(buf));
-						case 7:  return MemoryRef(bits, mods.rex.B() ? regs::R15 : regs::RDI, readSignedImm32(buf));
+						bool disp = false;
+						auto ret = decodeSIB(buf, mods, &disp).setBits(bits);
+						if(!disp) ret.setDisplacement(readSignedImm32(buf));
 
-						case 4: {
-							bool disp = false;
-							auto ret = decodeSIB(buf, mods, &disp).setBits(bits);
-							if(!disp) ret.setDisplacement(readSignedImm32(buf));
+						return ret;
+					}
+					else
+					{
+						auto imm = readSignedImm32(buf);
 
-							return ret;
-						}
+						if(compat || mods.addressSizeOverride)
+							return MemoryRef(bits, regs::get32Bit(baseRegIndex), imm);
+
+						else
+							return MemoryRef(bits, regs::get64Bit(baseRegIndex), imm);
 					}
 				}
 			}
@@ -378,6 +373,7 @@ namespace instrad::x64
 			case OpKind::Mem16:         return getMemoryOperand(buf, 16, mods);
 			case OpKind::Mem32:         return getMemoryOperand(buf, 32, mods);
 			case OpKind::Mem64:         return getMemoryOperand(buf, 64, mods);
+			case OpKind::Mem80:         return getMemoryOperand(buf, 80, mods);
 			case OpKind::Mem128:        return getMemoryOperand(buf, 128, mods);
 			case OpKind::Mem256:        return getMemoryOperand(buf, 256, mods);
 
@@ -386,6 +382,7 @@ namespace instrad::x64
 			case OpKind::ControlReg:    return getRegisterOperand(64, mods, RegKind::Control);
 			case OpKind::DebugReg:      return getRegisterOperand(64, mods, RegKind::Debug);
 
+			case OpKind::RegX87_Rm:     return getRegisterOperand(80, mods, RegKind::X87);
 
 			// this is damn dumb
 			case OpKind::Reg32Mem8:     return getRegisterOrMemoryOperand(buf, 32, 8, mods, RegKind::GPR);
@@ -468,6 +465,9 @@ namespace instrad::x64
 			}
 
 			case OpKind::ImplicitXMM0:  return regs::XMM0;
+
+			case OpKind::ImplicitST0:   return regs::ST0;
+			case OpKind::ImplicitST1:   return regs::ST1;
 
 			case OpKind::MemoryOfs8:
 			case OpKind::MemoryOfs16:

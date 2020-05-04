@@ -160,7 +160,7 @@ namespace instrad::x64
 		// now, we should have the opcode at our disposal.
 		auto opcode = buf.pop();
 
-		auto instr = Instruction(SecondaryOpcodeMap_0F_0F_3DNow[opcode].op());
+		auto instr = Instruction(tables::SecondaryOpcodeMap_0F_0F_3DNow[opcode].op());
 		instr.setDst(op1);
 		instr.setSrc(op2);
 
@@ -215,7 +215,7 @@ namespace instrad::x64
 		if(mode == ExecMode::Long && (xs.peek() & 0xF0) == 0x40)
 			modifiers.rex = RexPrefix(xs.pop());
 
-		auto table = PrimaryOpcodeMap;
+		auto table = tables::PrimaryOpcodeMap;
 		const TableEntry* prefixedTable = nullptr;
 
 		bool is3dnow = false;
@@ -230,44 +230,44 @@ namespace instrad::x64
 			else if(xs.match(0x38))
 			{
 				// sse
-				table = SecondaryOpcodeMap_0F_38_Normal;
+				table = tables::SecondaryOpcodeMap_0F_38_Normal;
 
 				if(modifiers.repnzPrefix)
-					prefixedTable = SecondaryOpcodeMap_0F_38_Prefix_F2;
+					prefixedTable = tables::SecondaryOpcodeMap_0F_38_Prefix_F2;
 
 				else if(modifiers.operandSizeOverride)
-					prefixedTable = SecondaryOpcodeMap_0F_38_Prefix_66;
+					prefixedTable = tables::SecondaryOpcodeMap_0F_38_Prefix_66;
 
 				else
-					prefixedTable = SecondaryOpcodeMap_0F_38_Prefix_None;
+					prefixedTable = tables::SecondaryOpcodeMap_0F_38_Prefix_None;
 			}
 			else if(xs.match(0x3A))
 			{
 				// also sse
-				table = SecondaryOpcodeMap_0F_3A_Normal;
+				table = tables::SecondaryOpcodeMap_0F_3A_Normal;
 
 				if(modifiers.operandSizeOverride)
-					prefixedTable = SecondaryOpcodeMap_0F_3A_Prefix_66;
+					prefixedTable = tables::SecondaryOpcodeMap_0F_3A_Prefix_66;
 
 				else
-					prefixedTable = SecondaryOpcodeMap_0F_3A_Prefix_None;
+					prefixedTable = tables::SecondaryOpcodeMap_0F_3A_Prefix_None;
 			}
 			else
 			{
-				table = SecondaryOpcodeMap_0F_Normal;
+				table = tables::SecondaryOpcodeMap_0F_Normal;
 
 				// check what kind of prefixes we have.
 				if(modifiers.repnzPrefix)
-					prefixedTable = SecondaryOpcodeMap_0F_Prefix_F2;
+					prefixedTable = tables::SecondaryOpcodeMap_0F_Prefix_F2;
 
 				else if(modifiers.repPrefix)
-					prefixedTable = SecondaryOpcodeMap_0F_Prefix_F3;
+					prefixedTable = tables::SecondaryOpcodeMap_0F_Prefix_F3;
 
 				else if(modifiers.operandSizeOverride)
-					prefixedTable = SecondaryOpcodeMap_0F_Prefix_66;
+					prefixedTable = tables::SecondaryOpcodeMap_0F_Prefix_66;
 
 				else
-					prefixedTable = SecondaryOpcodeMap_0F_Prefix_None;
+					prefixedTable = tables::SecondaryOpcodeMap_0F_Prefix_None;
 			}
 		}
 

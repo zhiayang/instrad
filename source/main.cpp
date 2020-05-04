@@ -43,6 +43,7 @@ static std::string print_intel(const instrad::x64::Instruction& instr)
 				case 16:    size = "WORD PTR ";     break;
 				case 32:    size = "DWORD PTR ";    break;
 				case 64:    size = "QWORD PTR ";    break;
+				case 80:    size = "TWORD PTR ";    break;
 				case 128:   size = "XMMWORD PTR ";  break;
 				case 256:   size = "YMMWORD PTR ";  break;
 				case 512:   size = "ZMMWORD PTR ";  break;
