@@ -82,6 +82,16 @@ namespace instrad::x64
 		// dumbness
 		Reg32Mem16,
 
+		// implicit memory operands, for movsb/cmpsb/stos/scas/etc.
+
+		// these always use ES segment, you can't override
+		ImplicitMem8_ES_EDI,
+		ImplicitMem32_ES_EDI,
+
+		// these can use any segment you override with
+		ImplicitMem8_ESI,
+		ImplicitMem32_ESI,
+
 		// instructions living in extension tables, but taking a register operand (and not a reg/mem operand),
 		// cannot use the modRM.reg bits (for obvious reasons), so they encode the register operand in modRM.rm
 		// instead. use this so the decoder knows where to look for the operands.
@@ -663,10 +673,10 @@ namespace instrad::x64
 		entry_3(0x69, ops::IMUL, OpKind::Reg32, OpKind::RegMem32, OpKind::Imm32),
 		entry_1_no_modrm(0x6A, ops::PUSH, OpKind::Imm8),
 		entry_3(0x6B, ops::IMUL, OpKind::Reg32, OpKind::RegMem32, OpKind::Imm8),
-		entry_0(0x6C, ops::INSB),
-		entry_0(0x6D, ops::INSD),
-		entry_0(0x6E, ops::OUTSB),
-		entry_0(0x6F, ops::OUTSD),
+		entry_2(0x6C, ops::INSB, OpKind::ImplicitMem8_ES_EDI, OpKind::ImplicitDX),
+		entry_2(0x6D, ops::INS, OpKind::ImplicitMem32_ES_EDI, OpKind::ImplicitDX),
+		entry_2(0x6E, ops::OUTSB, OpKind::ImplicitDX, OpKind::ImplicitMem8_ES_EDI),
+		entry_2(0x6F, ops::OUTS, OpKind::ImplicitDX, OpKind::ImplicitMem32_ES_EDI),
 
 		entry_1_no_modrm(0x70, ops::JO,  OpKind::Rel8Offset),
 		entry_1_no_modrm(0x71, ops::JNO, OpKind::Rel8Offset),
@@ -708,14 +718,14 @@ namespace instrad::x64
 		entry_ext(0x8F, &ModRMExt_8F[0]),
 
 		// all of these XCHGs are implicitly exchanging with RAX.
-		entry_lnri_2(0x90, ops::XCHG, OpKind::ImplicitRAX, OpKind::Reg64),
-		entry_lnri_2(0x91, ops::XCHG, OpKind::ImplicitRAX, OpKind::Reg64),
-		entry_lnri_2(0x92, ops::XCHG, OpKind::ImplicitRAX, OpKind::Reg64),
-		entry_lnri_2(0x93, ops::XCHG, OpKind::ImplicitRAX, OpKind::Reg64),
-		entry_lnri_2(0x94, ops::XCHG, OpKind::ImplicitRAX, OpKind::Reg64),
-		entry_lnri_2(0x95, ops::XCHG, OpKind::ImplicitRAX, OpKind::Reg64),
-		entry_lnri_2(0x96, ops::XCHG, OpKind::ImplicitRAX, OpKind::Reg64),
-		entry_lnri_2(0x97, ops::XCHG, OpKind::ImplicitRAX, OpKind::Reg64),
+		entry_lnri_2(0x90, ops::XCHG, OpKind::ImplicitEAX, OpKind::Reg32),
+		entry_lnri_2(0x91, ops::XCHG, OpKind::ImplicitEAX, OpKind::Reg32),
+		entry_lnri_2(0x92, ops::XCHG, OpKind::ImplicitEAX, OpKind::Reg32),
+		entry_lnri_2(0x93, ops::XCHG, OpKind::ImplicitEAX, OpKind::Reg32),
+		entry_lnri_2(0x94, ops::XCHG, OpKind::ImplicitEAX, OpKind::Reg32),
+		entry_lnri_2(0x95, ops::XCHG, OpKind::ImplicitEAX, OpKind::Reg32),
+		entry_lnri_2(0x96, ops::XCHG, OpKind::ImplicitEAX, OpKind::Reg32),
+		entry_lnri_2(0x97, ops::XCHG, OpKind::ImplicitEAX, OpKind::Reg32),
 
 		entry_0(0x98, ops::CWDE),
 		entry_0(0x99, ops::CDQ),
@@ -730,19 +740,19 @@ namespace instrad::x64
 		entry_2_no_modrm(0xA1, ops::MOV, OpKind::ImplicitEAX, OpKind::MemoryOfs32),
 		entry_2_no_modrm(0xA2, ops::MOV, OpKind::MemoryOfs8,  OpKind::ImplicitAL),
 		entry_2_no_modrm(0xA3, ops::MOV, OpKind::MemoryOfs32, OpKind::ImplicitEAX),
-		entry_0(0xA4, ops::MOVSB),
-		entry_0(0xA5, ops::MOVSD),
-		entry_0(0xA6, ops::CMPSB),
-		entry_0(0xA7, ops::CMPSD),
+		entry_2(0xA4, ops::MOVSB, OpKind::ImplicitMem8_ES_EDI, OpKind::ImplicitMem8_ESI),
+		entry_2(0xA5, ops::MOVS,  OpKind::ImplicitMem32_ES_EDI, OpKind::ImplicitMem32_ESI),
+		entry_2(0xA6, ops::CMPSB, OpKind::ImplicitMem8_ES_EDI, OpKind::ImplicitMem8_ESI),
+		entry_2(0xA7, ops::CMPS,  OpKind::ImplicitMem32_ES_EDI, OpKind::ImplicitMem32_ESI),
 
 		entry_2_no_modrm(0xA8, ops::TEST, OpKind::ImplicitAL,  OpKind::Imm8),
 		entry_2_no_modrm(0xA9, ops::TEST, OpKind::ImplicitEAX, OpKind::Imm32),
-		entry_0(0xAA, ops::STOSB),
-		entry_0(0xAB, ops::STOSD),
-		entry_0(0xAC, ops::LODSB),
-		entry_0(0xAD, ops::LODSD),
-		entry_0(0xAE, ops::SCASB),
-		entry_0(0xAF, ops::SCASD),
+		entry_2(0xAA, ops::STOSB, OpKind::ImplicitMem8_ES_EDI, OpKind::ImplicitAL),
+		entry_2(0xAB, ops::STOS,  OpKind::ImplicitMem32_ES_EDI, OpKind::ImplicitEAX),
+		entry_2(0xAC, ops::LODSB, OpKind::ImplicitAL, OpKind::ImplicitMem8_ESI),
+		entry_2(0xAD, ops::LODS,  OpKind::ImplicitEAX, OpKind::ImplicitMem32_ESI),
+		entry_2(0xAE, ops::SCASB, OpKind::ImplicitAL, OpKind::ImplicitMem8_ESI),
+		entry_2(0xAF, ops::SCAS,  OpKind::ImplicitEAX, OpKind::ImplicitMem32_ESI),
 
 		entry_lnri_2(0xB0, ops::MOV, OpKind::Reg8, OpKind::Imm8),
 		entry_lnri_2(0xB1, ops::MOV, OpKind::Reg8, OpKind::Imm8),

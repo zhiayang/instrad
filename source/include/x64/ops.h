@@ -64,9 +64,11 @@ namespace instrad::x64
 		constexpr auto CMP          = Op("cmp");
 		constexpr auto DEC          = Op("dec");
 		constexpr auto POP          = Op("pop");
+		constexpr auto INS          = Op("ins");
 		constexpr auto INSB         = Op("insb");
 		constexpr auto INSW         = Op("insw");
 		constexpr auto INSD         = Op("insd");
+		constexpr auto OUTS         = Op("outs");
 		constexpr auto OUTSB        = Op("outsb");
 		constexpr auto OUTSW        = Op("outsw");
 		constexpr auto OUTSD        = Op("outsd");
@@ -94,14 +96,17 @@ namespace instrad::x64
 		constexpr auto POPF         = Op("popf");
 		constexpr auto SAHF         = Op("sahf");
 		constexpr auto LAHF         = Op("lahf");
+		constexpr auto STOS         = Op("stos");
 		constexpr auto STOSB        = Op("stosb");
 		constexpr auto STOSW        = Op("stosw");
 		constexpr auto STOSD        = Op("stosd");
 		constexpr auto STOSQ        = Op("stosq");
+		constexpr auto LODS         = Op("lods");
 		constexpr auto LODSB        = Op("lodsb");
 		constexpr auto LODSW        = Op("lodsw");
 		constexpr auto LODSD        = Op("lodsd");
 		constexpr auto LODSQ        = Op("lodsq");
+		constexpr auto SCAS         = Op("scas");
 		constexpr auto SCASB        = Op("scasb");
 		constexpr auto SCASW        = Op("scasw");
 		constexpr auto SCASD        = Op("scasd");
@@ -118,12 +123,13 @@ namespace instrad::x64
 		constexpr auto IMUL         = Op("imul");
 		constexpr auto IDIV         = Op("idiv");
 
-
+		constexpr auto MOVS         = Op("movs");
 		constexpr auto MOVSB        = Op("movsb");
 		constexpr auto MOVSW        = Op("movsw");
 		constexpr auto MOVSD        = Op("movsd");      // SSE also has a movsd instruction, god dammit intel
 		constexpr auto MOVSQ        = Op("movsq");
 
+		constexpr auto CMPS         = Op("cmps");
 		constexpr auto CMPSB        = Op("cmpsb");
 		constexpr auto CMPSW        = Op("cmpsw");
 		constexpr auto CMPSD        = Op("cmpsd");      // SSE also has a cmpsd instruction, god dammit intel

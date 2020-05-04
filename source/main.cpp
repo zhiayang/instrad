@@ -11,10 +11,9 @@
 
 #include "zpr.h"
 #include "buffer.h"
-#include "x64/x64.h"
+#include "x64/decode.h"
 
-
-std::string print_intel(const instrad::x64::Instruction& instr)
+static std::string print_intel(const instrad::x64::Instruction& instr)
 {
 	auto print_operand = [](const instrad::x64::Operand& op) -> std::string {
 		if(op.isRegister())
@@ -40,13 +39,13 @@ std::string print_intel(const instrad::x64::Instruction& instr)
 			std::string size = "";
 			switch(mem.bits())
 			{
-				case 8:     size = "byte ptr ";     break;
-				case 16:    size = "word ptr ";     break;
-				case 32:    size = "dword ptr ";    break;
-				case 64:    size = "qword ptr ";    break;
-				case 128:   size = "xmmword ptr ";  break;
-				case 256:   size = "ymmword ptr ";  break;
-				case 512:   size = "zmmword ptr ";  break;
+				case 8:     size = "BYTE PTR ";     break;
+				case 16:    size = "WORD PTR ";     break;
+				case 32:    size = "DWORD PTR ";    break;
+				case 64:    size = "QWORD PTR ";    break;
+				case 128:   size = "XMMWORD PTR ";  break;
+				case 256:   size = "YMMWORD PTR ";  break;
+				case 512:   size = "ZMMWORD PTR ";  break;
 				default:    break;
 			}
 
@@ -115,48 +114,75 @@ std::string print_intel(const instrad::x64::Instruction& instr)
 		return margin + prefix + zpr::sprint("%s %s, %s", instr.op().mnemonic(), print_operand(instr.dst()), print_operand(instr.src()));
 }
 
+constexpr uint8_t test_bytes[] = {
+	0x48, 0x8d, 0x46, 0x10, 0x48, 0x89, 0x06, 0x48, 0x8b, 0x44, 0x24, 0x10, 0x48, 0x39, 0xd8,
+	0x75, 0x86, 0x66, 0x0f, 0x6f, 0x4c, 0x24, 0x20, 0x0f, 0x11, 0x4e, 0x10, 0xeb, 0x86, 0x65, 0xf3, 0xa4
+
+	// 0xb8, 0x04, 0x00, 0x00, 0x00, 0xbb, 0x01, 0x00, 0x00, 0x00, 0xb9, 0x24, 0x00, 0x00, 0x00,
+	// 0xba, 0x0d, 0x00, 0x00, 0x00, 0x0f, 0x05, 0xb8, 0x01, 0x00, 0x00, 0x00, 0xbb, 0x00, 0x00,
+	// 0x00, 0x00, 0x0f, 0x05
+
+#if 0
+   0:   b8 04 00 00 00          mov    eax,0x4
+   5:   bb 01 00 00 00          mov    ebx,0x1
+   a:   b9 24 00 00 00          mov    ecx,0x24
+   f:   ba 0d 00 00 00          mov    edx,0xd
+  14:   0f 05                   syscall
+  16:   b8 01 00 00 00          mov    eax,0x1
+  1b:   bb 00 00 00 00          mov    ebx,0x0
+  20:   0f 05                   syscall
+#endif
+};
+
+constexpr instrad::x64::Instruction test_fixed()
+{
+	auto buf = instrad::Buffer(test_bytes, sizeof(test_bytes));
+	return instrad::x64::read(buf, instrad::x64::ExecMode::Compat);
+}
 
 
 int main(int argc, char** argv)
 {
-	using namespace instrad;
-	using namespace instrad::x64;
+	// constexpr auto foo = test_fixed();
+	// printf("%zu\n", foo.numBytes());
 
-	if(argc < 2)
-	{
-		zpr::println("give filename");
-		return 1;
-	}
+	// if(argc < 2)
+	// {
+	// 	zpr::println("give filename");
+	// 	return 1;
+	// }
 
-	auto file = std::ifstream(argv[1], std::ios::binary);
-	if(!file)
-	{
-		perror("failed to open file");
-		return 1;
-	}
+	// auto file = std::ifstream(argv[1], std::ios::binary);
+	// if(!file)
+	// {
+	// 	perror("failed to open file");
+	// 	return 1;
+	// }
 
-	file.seekg(0, std::ios::end);
-	size_t length = file.tellg();
-	file.seekg(0, std::ios::beg);
+	// file.seekg(0, std::ios::end);
+	// size_t length = file.tellg();
+	// file.seekg(0, std::ios::beg);
 
-	length = std::min(length, (size_t) 1024);
+	// length = std::min(length, (size_t) 1024);
 
-	auto bytes = new uint8_t[length];
-	file.read((char*) &bytes[0], length);
+	// auto bytes = new uint8_t[length];
+	// file.read((char*) &bytes[0], length);
 
-	auto buf = Buffer(bytes, length);
+	// auto buf = Buffer(bytes, length);
+	auto buf = instrad::Buffer(test_bytes, sizeof(test_bytes));
 
-	uint8_t test[] = {  0x48,0x8d,0x46,0x10,0x48,0x89,0x06,0x48,0x8b,0x44,0x24,0x10,0x48,0x39,0xd8,
-						0x75,0x86,0x66,0x0f,0x6f,0x4c,0x24,0x20,0x0f,0x11,0x4e,0x10,0xeb,0x86,0x66,0x90 };
-	buf = Buffer(test, sizeof(test));
 	while((ssize_t) buf.remaining() > 0)
 	{
-		auto instr = read(buf);
+		auto instr = instrad::x64::read(buf, instrad::x64::ExecMode::Long);
 		zpr::print("%s\n", print_intel(instr));
 	}
 
-	delete[] bytes;
+	// delete[] bytes;
 }
+
+
+
+
 
 
 
