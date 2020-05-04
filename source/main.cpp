@@ -143,41 +143,53 @@ constexpr instrad::x64::Instruction test_fixed()
 
 int main(int argc, char** argv)
 {
-	// constexpr auto foo = test_fixed();
-	// printf("%zu\n", foo.numBytes());
+	constexpr auto foo = test_fixed();
+	printf("%zu\n", foo.numBytes());
 
-	// if(argc < 2)
-	// {
-	// 	zpr::println("give filename");
-	// 	return 1;
-	// }
-
-	// auto file = std::ifstream(argv[1], std::ios::binary);
-	// if(!file)
-	// {
-	// 	perror("failed to open file");
-	// 	return 1;
-	// }
-
-	// file.seekg(0, std::ios::end);
-	// size_t length = file.tellg();
-	// file.seekg(0, std::ios::beg);
-
-	// length = std::min(length, (size_t) 1024);
-
-	// auto bytes = new uint8_t[length];
-	// file.read((char*) &bytes[0], length);
-
-	// auto buf = Buffer(bytes, length);
-	auto buf = instrad::Buffer(test_bytes, sizeof(test_bytes));
-
-	while((ssize_t) buf.remaining() > 0)
+	if(argc < 2)
 	{
-		auto instr = instrad::x64::read(buf, instrad::x64::ExecMode::Long);
-		zpr::print("%s\n", print_intel(instr));
+		zpr::println("give filename");
+		return 1;
 	}
 
-	// delete[] bytes;
+	auto file = std::ifstream(argv[1], std::ios::binary);
+	if(!file)
+	{
+		perror("failed to open file");
+		return 1;
+	}
+
+	file.seekg(0, std::ios::end);
+	size_t length = file.tellg();
+	file.seekg(0, std::ios::beg);
+
+	length = std::min(length, (size_t) 1024);
+
+	auto bytes = new uint8_t[length];
+	file.read((char*) &bytes[0], length);
+
+	if constexpr (false)
+	{
+		auto buf = instrad::Buffer(test_bytes, sizeof(test_bytes));
+
+		while((ssize_t) buf.remaining() > 0)
+		{
+			auto instr = instrad::x64::read(buf, instrad::x64::ExecMode::Long);
+			zpr::print("%s\n", print_intel(instr));
+		}
+	}
+	else
+	{
+		auto buf = instrad::Buffer(bytes, length);
+
+		while((ssize_t) buf.remaining() > 0)
+		{
+			auto instr = instrad::x64::read(buf, instrad::x64::ExecMode::Long);
+			zpr::print("%s\n", print_intel(instr));
+		}
+	}
+
+	delete[] bytes;
 }
 
 

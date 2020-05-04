@@ -147,6 +147,26 @@ namespace instrad::x64
 		}
 	}
 
+	constexpr Instruction decode_3dnow(Buffer& buf, InstrModifiers& mods)
+	{
+		// from the AMD manuals, it is evident that all the 3dnow instructions
+		// take a modRM byte. so, we can parse that unconditionally:
+		mods.modrm = ModRM(buf.pop());
+
+		// furthermore, they all have the form OP mmx, mmx/mem64
+		auto op1 = getOperand(buf, OpKind::RegMmx, mods);
+		auto op2 = getOperand(buf, OpKind::RegMmxMem64, mods);
+
+		// now, we should have the opcode at our disposal.
+		auto opcode = buf.pop();
+
+		auto instr = Instruction(SecondaryOpcodeMap_0F_0F_3DNow[opcode].op());
+		instr.setDst(op1);
+		instr.setSrc(op2);
+
+		return instr;
+	}
+
 	enum class ExecMode
 	{
 		Legacy,
@@ -198,41 +218,63 @@ namespace instrad::x64
 		auto table = PrimaryOpcodeMap;
 		const TableEntry* prefixedTable = nullptr;
 
+		bool is3dnow = false;
+
 		// next, check for escape
 		if(xs.match(0x0F))
 		{
 			if(xs.match(0x0F))
 			{
-				// 3dnow
+				is3dnow = true;
 			}
 			else if(xs.match(0x38))
 			{
 				// sse
+				table = SecondaryOpcodeMap_0F_38_Normal;
+
+				if(modifiers.repnzPrefix)
+					prefixedTable = SecondaryOpcodeMap_0F_38_Prefix_F2;
+
+				else if(modifiers.operandSizeOverride)
+					prefixedTable = SecondaryOpcodeMap_0F_38_Prefix_66;
+
+				else
+					prefixedTable = SecondaryOpcodeMap_0F_38_Prefix_None;
 			}
 			else if(xs.match(0x3A))
 			{
 				// also sse
+				table = SecondaryOpcodeMap_0F_3A_Normal;
+
+				if(modifiers.operandSizeOverride)
+					prefixedTable = SecondaryOpcodeMap_0F_3A_Prefix_66;
+
+				else
+					prefixedTable = SecondaryOpcodeMap_0F_3A_Prefix_None;
 			}
 			else
 			{
-				table = SecondaryOpcodeMap_F0_Normal;
+				table = SecondaryOpcodeMap_0F_Normal;
 
 				// check what kind of prefixes we have.
 				if(modifiers.repnzPrefix)
-					prefixedTable = SecondaryOpcodeMap_F0_Prefix_F2;
+					prefixedTable = SecondaryOpcodeMap_0F_Prefix_F2;
 
 				else if(modifiers.repPrefix)
-					prefixedTable = SecondaryOpcodeMap_F0_Prefix_F3;
+					prefixedTable = SecondaryOpcodeMap_0F_Prefix_F3;
 
 				else if(modifiers.operandSizeOverride)
-					prefixedTable = SecondaryOpcodeMap_F0_Prefix_66;
+					prefixedTable = SecondaryOpcodeMap_0F_Prefix_66;
 
 				else
-					prefixedTable = SecondaryOpcodeMap_F0_Prefix_None;
+					prefixedTable = SecondaryOpcodeMap_0F_Prefix_None;
 			}
 		}
 
-		auto ret = decode(xs, modifiers, table, prefixedTable);
+		auto ret = is3dnow
+			? decode_3dnow(xs, modifiers)
+			: decode(xs, modifiers, table, prefixedTable);
+
 		auto len = xs.ptr() - begin;
 
 		ret.setBytes(begin, len);

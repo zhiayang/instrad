@@ -369,6 +369,7 @@ namespace instrad::x64
 			case OpKind::RegMmxMem32:   return getRegisterOrMemoryOperand(buf, 64, 32, mods, RegKind::Vector);
 			case OpKind::RegMmxMem64:   return getRegisterOrMemoryOperand(buf, 64, 64, mods, RegKind::Vector);
 
+			case OpKind::RegXmmMem16:   return getRegisterOrMemoryOperand(buf, 128, 16, mods, RegKind::Vector);
 			case OpKind::RegXmmMem32:   return getRegisterOrMemoryOperand(buf, 128, 32, mods, RegKind::Vector);
 			case OpKind::RegXmmMem64:   return getRegisterOrMemoryOperand(buf, 128, 64, mods, RegKind::Vector);
 			case OpKind::RegXmmMem128:  return getRegisterOrMemoryOperand(buf, 128, 128, mods, RegKind::Vector);
@@ -381,14 +382,14 @@ namespace instrad::x64
 			case OpKind::Mem256:        return getMemoryOperand(buf, 256, mods);
 
 			// the index for these special registers is always in modRM.reg
-			case OpKind::SegmentReg:   return getRegisterOperand(16, mods, RegKind::Segment);
-			case OpKind::ControlReg:   return getRegisterOperand(64, mods, RegKind::Control);
-			case OpKind::DebugReg:     return getRegisterOperand(64, mods, RegKind::Debug);
+			case OpKind::SegmentReg:    return getRegisterOperand(16, mods, RegKind::Segment);
+			case OpKind::ControlReg:    return getRegisterOperand(64, mods, RegKind::Control);
+			case OpKind::DebugReg:      return getRegisterOperand(64, mods, RegKind::Debug);
 
 
 			// this is damn dumb
-			case OpKind::Reg32Mem16:
-				return getRegisterOrMemoryOperand(buf, 32, 16, mods, RegKind::GPR);
+			case OpKind::Reg32Mem8:     return getRegisterOrMemoryOperand(buf, 32, 8, mods, RegKind::GPR);
+			case OpKind::Reg32Mem16:    return getRegisterOrMemoryOperand(buf, 32, 16, mods, RegKind::GPR);
 
 
 			case OpKind::Imm8:
@@ -465,6 +466,8 @@ namespace instrad::x64
 				else
 					return regs::EAX;
 			}
+
+			case OpKind::ImplicitXMM0:  return regs::XMM0;
 
 			case OpKind::MemoryOfs8:
 			case OpKind::MemoryOfs16:
