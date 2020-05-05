@@ -123,6 +123,10 @@ namespace instrad::x64
 		RegXmm_Rm,
 		RegYmm_Rm,
 
+		VSIB_Xmm32,
+		VSIB_Xmm64,
+		VSIB_Ymm32,
+		VSIB_Ymm64,
 
 		Ptr16_16,       // for far calls and jumps
 		Ptr16_32,

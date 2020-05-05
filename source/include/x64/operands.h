@@ -138,6 +138,48 @@ namespace instrad::x64
 		return mem;
 	}
 
+	constexpr MemoryRef decodeVSIB(Buffer& buf, size_t vectorRegBits, const InstrModifiers& mods)
+	{
+		auto vsib = buf.pop();
+
+		uint8_t base  = ((vsib & 0x07) >> 0) | (mods.vex.B() << 3);
+		uint8_t index = ((vsib & 0x38) >> 3) | (mods.vex.X() << 3);
+		uint8_t scale = ((vsib & 0xC0) >> 6);
+
+		auto mem = MemoryRef();
+		mem.setScale(1 << scale);
+
+		mem.setIndex(vectorRegBits == 128
+						? regs::getXMM(index)
+						: regs::getYMM(index)
+					);
+
+		if(mods.modrm.mod() == 0)
+		{
+			mem.setBase(regs::NONE);
+			mem.setDisplacement(readSignedImm32(buf));
+		}
+		else if(mods.modrm.mod() == 1)
+		{
+			mem.setDisplacement(readSignedImm8(buf));
+			mem.setBase(mods.compatibilityMode
+				? regs::get32Bit(base)
+				: regs::get64Bit(base)
+			);
+		}
+		else if(mods.modrm.mod() == 2)
+		{
+			mem.setDisplacement(readSignedImm32(buf));
+			mem.setBase(mods.compatibilityMode
+				? regs::get32Bit(base)
+				: regs::get64Bit(base)
+			);
+		}
+
+		return mem;
+	}
+
+
 
 	constexpr Register getRegisterOperandFromVVVV(size_t bits, const InstrModifiers& mods, RegKind rk)
 	{
@@ -530,6 +572,15 @@ namespace instrad::x64
 
 			case OpKind::RegYmm_TrailingImm8HighNib:
 				return decodeRegisterNumber(256, mods, (readSignedImm8(buf) & 0xF) >> 4, RegKind::Vector);
+
+			case OpKind::VSIB_Xmm32:
+			case OpKind::VSIB_Xmm64:
+				return decodeVSIB(buf, 128, mods);
+
+			case OpKind::VSIB_Ymm32:
+			case OpKind::VSIB_Ymm64:
+				return decodeVSIB(buf, 256, mods);
+
 
 			case OpKind::Ptr16_16:
 			case OpKind::Ptr16_32:

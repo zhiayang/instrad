@@ -1122,5 +1122,9 @@ namespace instrad::x64
 		constexpr auto VFNMSUBPD        = Op("vfnmsubpd");
 		constexpr auto VFNMSUBSS        = Op("vfnmsubss");
 		constexpr auto VFNMSUBSD        = Op("vfnmsubsd");
+		constexpr auto VPGATHERDD       = Op("vpgatherdd");
+		constexpr auto VPGATHERQD       = Op("vpgatherdq");
+		constexpr auto VGATHERDPS       = Op("vgatherdps");
+		constexpr auto VGATHERQPS       = Op("vgatherqps");
 	}
 }

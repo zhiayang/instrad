@@ -1330,23 +1330,25 @@ namespace tables
 
 
 
-		// NEEDS VSIB!!
-		// [0x90] = VexEntry(0x90)
-		// 			.p66_W0_L0(entry_3(0x90, ops::VPGATHERDD))
-		// 			.p66_W0_L1(entry_3(0x90, ops::VPGATHERDD))
-		// 			,
-		// [0x91] = VexEntry(0x91)
-		// 			.p66_W0_L0(entry_3(0x91, ops::VPGATHERQD))
-		// 			.p66_W0_L1(entry_3(0x91, ops::VPGATHERQD))
-		// 			,
-		// [0x92] = VexEntry(0x92)
-		// 			.p66_W0_L0(entry_3(0x92, ops::VGATHERDPS))
-		// 			.p66_W0_L1(entry_3(0x92, ops::VGATHERDPS))
-		// 			,
-		// [0x93] = VexEntry(0x93)
-		// 			.p66_W0_L0(entry_3(0x93, ops::VGATHERQPS))
-		// 			.p66_W0_L1(entry_3(0x93, ops::VGATHERQPS))
-		// 			,
+		[0x90] = VexEntry(0x90)
+					.p66_W0_L0(entry_3(0x90, ops::VPGATHERDD, OpKind::RegXmm, OpKind::VSIB_Xmm32, OpKind::RegXmm_vvvv))
+					.p66_W0_L1(entry_3(0x90, ops::VPGATHERDD, OpKind::RegYmm, OpKind::VSIB_Ymm32, OpKind::RegYmm_vvvv))
+					,
+
+		[0x91] = VexEntry(0x91)
+					.p66_W0_L0(entry_3(0x91, ops::VPGATHERQD, OpKind::RegXmm, OpKind::VSIB_Xmm64, OpKind::RegXmm_vvvv))
+					.p66_W0_L1(entry_3(0x91, ops::VPGATHERQD, OpKind::RegYmm, OpKind::VSIB_Ymm64, OpKind::RegYmm_vvvv))
+					,
+
+		[0x92] = VexEntry(0x92)
+					.p66_W0_L0(entry_3(0x92, ops::VGATHERDPS, OpKind::RegXmm, OpKind::VSIB_Xmm32, OpKind::RegXmm_vvvv))
+					.p66_W0_L1(entry_3(0x92, ops::VGATHERDPS, OpKind::RegYmm, OpKind::VSIB_Ymm32, OpKind::RegYmm_vvvv))
+					,
+
+		[0x93] = VexEntry(0x93)
+					.p66_W0_L0(entry_3(0x93, ops::VGATHERQPS, OpKind::RegXmm, OpKind::VSIB_Xmm64, OpKind::RegXmm_vvvv))
+					.p66_W0_L1(entry_3(0x93, ops::VGATHERQPS, OpKind::RegYmm, OpKind::VSIB_Ymm64, OpKind::RegYmm_vvvv))
+					,
 
 		[0x96] = VexEntry(0x96)
 					.p66_W0_L0(entry_3(0x96, ops::VFMADDSUB132PS, OpKind::RegXmm, OpKind::RegXmm_vvvv, OpKind::RegXmmMem128))
