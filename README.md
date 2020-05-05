@@ -47,7 +47,7 @@ The tables are in `source/include/x64/tables/`. They were all transcribed by han
 
 ### disclaimer ###
 
-There's no guarantee that any of the output is correct, but there's two main disclaimers:
+There's no guarantee that any of the output is correct, but there's three main disclaimers:
 
 1. I mainly wrote this targeting x86_64, so some of the decoding might be wrong if you are deconstructing a 32-bit (compat mode) bitstream.
 2. Pretty sure my constants are wonky, and I'm not handling sign extension properly in most (or all?) cases.
