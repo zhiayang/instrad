@@ -6,7 +6,7 @@
 
 #include "entry.h"
 
-namespace instrad::x64::tables
+namespace instrad::x64
 {
 	// VEX is a special child.
 	// note: to keep things aligned, we use "mod0" and "mod3", even though the distinction
@@ -26,36 +26,36 @@ namespace instrad::x64::tables
 		constexpr bool present() const { return this->m_present; }
 
 		constexpr VE& pNN_W0_L0_mod3(TE e)  { this->entries[0x00] = e; return *this; }
-		constexpr VE& pNN_W0_L1_mod3(TE e)  { this->entries[0x04] = e; return *this; }
-		constexpr VE& pNN_W1_L0_mod3(TE e)  { this->entries[0x08] = e; return *this; }
-		constexpr VE& pNN_W1_L1_mod3(TE e)  { this->entries[0x0C] = e; return *this; }
-		constexpr VE& p66_W0_L0_mod3(TE e)  { this->entries[0x01] = e; return *this; }
+		constexpr VE& pNN_W0_L1_mod3(TE e)  { this->entries[0x01] = e; return *this; }
+		constexpr VE& pNN_W1_L0_mod3(TE e)  { this->entries[0x02] = e; return *this; }
+		constexpr VE& pNN_W1_L1_mod3(TE e)  { this->entries[0x03] = e; return *this; }
+		constexpr VE& p66_W0_L0_mod3(TE e)  { this->entries[0x04] = e; return *this; }
 		constexpr VE& p66_W0_L1_mod3(TE e)  { this->entries[0x05] = e; return *this; }
-		constexpr VE& p66_W1_L0_mod3(TE e)  { this->entries[0x09] = e; return *this; }
-		constexpr VE& p66_W1_L1_mod3(TE e)  { this->entries[0x0D] = e; return *this; }
-		constexpr VE& pF2_W0_L0_mod3(TE e)  { this->entries[0x02] = e; return *this; }
-		constexpr VE& pF2_W0_L1_mod3(TE e)  { this->entries[0x06] = e; return *this; }
+		constexpr VE& p66_W1_L0_mod3(TE e)  { this->entries[0x06] = e; return *this; }
+		constexpr VE& p66_W1_L1_mod3(TE e)  { this->entries[0x07] = e; return *this; }
+		constexpr VE& pF2_W0_L0_mod3(TE e)  { this->entries[0x08] = e; return *this; }
+		constexpr VE& pF2_W0_L1_mod3(TE e)  { this->entries[0x09] = e; return *this; }
 		constexpr VE& pF2_W1_L0_mod3(TE e)  { this->entries[0x0A] = e; return *this; }
-		constexpr VE& pF2_W1_L1_mod3(TE e)  { this->entries[0x0E] = e; return *this; }
-		constexpr VE& pF3_W0_L0_mod3(TE e)  { this->entries[0x03] = e; return *this; }
-		constexpr VE& pF3_W0_L1_mod3(TE e)  { this->entries[0x07] = e; return *this; }
-		constexpr VE& pF3_W1_L0_mod3(TE e)  { this->entries[0x0B] = e; return *this; }
+		constexpr VE& pF2_W1_L1_mod3(TE e)  { this->entries[0x0B] = e; return *this; }
+		constexpr VE& pF3_W0_L0_mod3(TE e)  { this->entries[0x0C] = e; return *this; }
+		constexpr VE& pF3_W0_L1_mod3(TE e)  { this->entries[0x0D] = e; return *this; }
+		constexpr VE& pF3_W1_L0_mod3(TE e)  { this->entries[0x0E] = e; return *this; }
 		constexpr VE& pF3_W1_L1_mod3(TE e)  { this->entries[0x0F] = e; return *this; }
 		constexpr VE& pNN_W0_L0_mod0(TE e)  { this->entries[0x10] = e; return *this; }
-		constexpr VE& pNN_W0_L1_mod0(TE e)  { this->entries[0x14] = e; return *this; }
-		constexpr VE& pNN_W1_L0_mod0(TE e)  { this->entries[0x18] = e; return *this; }
-		constexpr VE& pNN_W1_L1_mod0(TE e)  { this->entries[0x1C] = e; return *this; }
-		constexpr VE& p66_W0_L0_mod0(TE e)  { this->entries[0x11] = e; return *this; }
+		constexpr VE& pNN_W0_L1_mod0(TE e)  { this->entries[0x11] = e; return *this; }
+		constexpr VE& pNN_W1_L0_mod0(TE e)  { this->entries[0x12] = e; return *this; }
+		constexpr VE& pNN_W1_L1_mod0(TE e)  { this->entries[0x13] = e; return *this; }
+		constexpr VE& p66_W0_L0_mod0(TE e)  { this->entries[0x14] = e; return *this; }
 		constexpr VE& p66_W0_L1_mod0(TE e)  { this->entries[0x15] = e; return *this; }
-		constexpr VE& p66_W1_L0_mod0(TE e)  { this->entries[0x19] = e; return *this; }
-		constexpr VE& p66_W1_L1_mod0(TE e)  { this->entries[0x1D] = e; return *this; }
-		constexpr VE& pF2_W0_L0_mod0(TE e)  { this->entries[0x12] = e; return *this; }
-		constexpr VE& pF2_W0_L1_mod0(TE e)  { this->entries[0x16] = e; return *this; }
+		constexpr VE& p66_W1_L0_mod0(TE e)  { this->entries[0x16] = e; return *this; }
+		constexpr VE& p66_W1_L1_mod0(TE e)  { this->entries[0x17] = e; return *this; }
+		constexpr VE& pF2_W0_L0_mod0(TE e)  { this->entries[0x18] = e; return *this; }
+		constexpr VE& pF2_W0_L1_mod0(TE e)  { this->entries[0x19] = e; return *this; }
 		constexpr VE& pF2_W1_L0_mod0(TE e)  { this->entries[0x1A] = e; return *this; }
-		constexpr VE& pF2_W1_L1_mod0(TE e)  { this->entries[0x1E] = e; return *this; }
-		constexpr VE& pF3_W0_L0_mod0(TE e)  { this->entries[0x13] = e; return *this; }
-		constexpr VE& pF3_W0_L1_mod0(TE e)  { this->entries[0x17] = e; return *this; }
-		constexpr VE& pF3_W1_L0_mod0(TE e)  { this->entries[0x1B] = e; return *this; }
+		constexpr VE& pF2_W1_L1_mod0(TE e)  { this->entries[0x1B] = e; return *this; }
+		constexpr VE& pF3_W0_L0_mod0(TE e)  { this->entries[0x1C] = e; return *this; }
+		constexpr VE& pF3_W0_L1_mod0(TE e)  { this->entries[0x1D] = e; return *this; }
+		constexpr VE& pF3_W1_L0_mod0(TE e)  { this->entries[0x1E] = e; return *this; }
 		constexpr VE& pF3_W1_L1_mod0(TE e)  { this->entries[0x1F] = e; return *this; }
 
 		// now, some convenience functions
@@ -140,17 +140,61 @@ namespace instrad::x64::tables
 		constexpr VE& pF3(TE e)             { return pF3_mod3(e).pF3_mod0(e); }
 
 		constexpr const VexEntry* extension() const { return this->m_extension; }
+		constexpr VE& noModRM() { this->m_needsModRM = false; return *this; }
+
+		constexpr bool needsModRM() const { return this->m_needsModRM; }
 
 	private:
 		uint8_t m_opcode;
 		bool m_present;
 
+		bool m_needsModRM = true;
 		const VexEntry* m_extension = nullptr;
 
 		// keep an internal table of 32 values. see the methods for the indices.
 		TableEntry entries[32] = { };
+
+		friend struct VexEntryDecoder;
 	};
 
+	struct VexEntryDecoder
+	{
+		constexpr VexEntryDecoder(const VexEntry& ent) : m_ent(ent) { }
+
+		constexpr VexEntryDecoder& setMod3()    { this->m_mod3 = true; return *this; }
+		constexpr VexEntryDecoder& setModNot3() { this->m_mod3 = false; return *this; }
+		constexpr VexEntryDecoder& setVexW()    { this->m_W = true; return *this; }
+		constexpr VexEntryDecoder& setVexL()    { this->m_L = true; return *this; }
+		constexpr VexEntryDecoder& setPref66()  { this->m_66 = true; return *this; }
+		constexpr VexEntryDecoder& setPrefF2()  { this->m_F2 = true; return *this; }
+		constexpr VexEntryDecoder& setPrefF3()  { this->m_F3 = true; return *this; }
+
+		constexpr TableEntry get()
+		{
+			size_t idx = 0;
+			if(!m_mod3) idx |= 0x10;
+			if(m_66)    idx |= 0x04;
+			if(m_F2)    idx |= 0x08;
+			if(m_F3)    idx |= 0x0C;
+			if(m_W)     idx |= 0x02;
+			if(m_L)     idx |= 0x01;
+
+			return m_ent.entries[idx];
+		}
+
+	private:
+		bool m_mod3 = false;
+		bool m_W = false;
+		bool m_L = false;
+		bool m_66 = false;
+		bool m_F2 = false;
+		bool m_F3 = false;
+
+		const VexEntry& m_ent;
+	};
+
+namespace tables
+{
 	constexpr VexEntry Vex_Map_1_ModRMExt_71[] = {
 		[2] = VexEntry(0x71)
 				.p66_L0(entry_3(0x71, ops::VPSRLW, OpKind::RegXmm_vvvv, OpKind::RegXmm_Rm, OpKind::Imm8))
@@ -584,6 +628,7 @@ namespace instrad::x64::tables
 		[0x77] = VexEntry(0x77)
 					.pNN_L0(entry_0(0x77, ops::VZEROUPPER))
 					.pNN_L1(entry_0(0x77, ops::VZEROALL))
+					.noModRM()
 					,
 
 
@@ -1537,6 +1582,8 @@ namespace instrad::x64::tables
 					.pF3_W0_L0(entry_3(0xF7, ops::SARX, OpKind::Reg32, OpKind::RegMem32, OpKind::Reg32_vvvv))
 					.pF3_W1_L0(entry_3(0xF7, ops::SARX, OpKind::Reg64, OpKind::RegMem64, OpKind::Reg64_vvvv))
 					,
+
+		[0xFF] = VexEntry(0)
 	};
 
 
@@ -2039,10 +2086,9 @@ namespace instrad::x64::tables
 					.pF2_W0_L0(entry_3(0xF0, ops::RORX, OpKind::Reg32, OpKind::RegMem32, OpKind::Imm8))
 					.pF2_W1_L0(entry_3(0xF0, ops::RORX, OpKind::Reg64, OpKind::RegMem64, OpKind::Imm8))
 					,
+
+		[0xFF] = VexEntry(0)
 	};
 }
+}
 
-
-
-/*
-*/

@@ -139,6 +139,11 @@ namespace instrad::x64
 	}
 
 
+	constexpr Register getRegisterOperandFromVVVV(size_t bits, const InstrModifiers& mods, RegKind rk)
+	{
+		return decodeRegisterNumber(bits, mods, mods.vex.vvvv(), rk);
+	}
+
 	constexpr Register getRegisterOperandFromModRM(size_t bits, const InstrModifiers& mods, RegKind rk)
 	{
 		return decodeRegisterNumber(bits, mods, mods.modrm.rm() | (mods.rex.B() << 3), rk);
@@ -515,13 +520,16 @@ namespace instrad::x64
 				return MemoryRef(bits, mods.compatibilityMode ? regs::ESI : regs::RSI).setSegment(seg);
 			}
 
-			case OpKind::Reg32_vvvv:
-			case OpKind::Reg64_vvvv:
-			case OpKind::RegXmm_vvvv:
-			case OpKind::RegYmm_vvvv:
+			case OpKind::Reg32_vvvv:    return getRegisterOperandFromVVVV(32, mods, RegKind::GPR);
+			case OpKind::Reg64_vvvv:    return getRegisterOperandFromVVVV(64, mods, RegKind::GPR);
+			case OpKind::RegXmm_vvvv:   return getRegisterOperandFromVVVV(128, mods, RegKind::Vector);
+			case OpKind::RegYmm_vvvv:   return getRegisterOperandFromVVVV(256, mods, RegKind::Vector);
 
 			case OpKind::RegXmm_TrailingImm8HighNib:
+				return decodeRegisterNumber(128, mods, (readSignedImm8(buf) & 0xF) >> 4, RegKind::Vector);
+
 			case OpKind::RegYmm_TrailingImm8HighNib:
+				return decodeRegisterNumber(256, mods, (readSignedImm8(buf) & 0xF) >> 4, RegKind::Vector);
 
 			case OpKind::Ptr16_16:
 			case OpKind::Ptr16_32:

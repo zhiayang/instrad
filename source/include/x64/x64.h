@@ -136,13 +136,16 @@ namespace instrad::x64
 				: ((~this->byte1 & 0x80) >> 7);
 		}
 
-		constexpr uint8_t X() const     { return this->prefix == 0xC5 ? 0x1 : ((~this->byte1 & 0x40) >> 6); }
-		constexpr uint8_t B() const     { return this->prefix == 0xC5 ? 0x1 : ((~this->byte1 & 0x20) >> 5); }
-		constexpr uint8_t W() const     { return this->prefix == 0xC5 ? 0x0 : ((this->byte2 & 0x80) >> 7); }
+		// the X B and W bits are inverted in the bitstream, but we invert them back.
+		// for 2-byte opcode form, the implied values of X', B', and W' are 1, 1, and 0;
+		// this gives us X=0, B=0, W=1.
+		constexpr uint8_t X() const     { return this->prefix == 0xC5 ? 0x0 : ((~this->byte1 & 0x40) >> 6); }
+		constexpr uint8_t B() const     { return this->prefix == 0xC5 ? 0x0 : ((~this->byte1 & 0x20) >> 5); }
+		constexpr uint8_t W() const     { return this->prefix == 0xC5 ? 0x1 : ((this->byte2 & 0x80) >> 7); }
 		constexpr uint8_t map() const   { return this->prefix == 0xC5 ? 0x1 : this->byte1 & 0x1F; }
 		constexpr uint8_t vvvv() const  { return (~this->byte2 & 0x78) >> 3; }
 		constexpr uint8_t L() const     { return (this->byte2 & 0x4) >> 2; }
-		constexpr uint8_t pp() const    { return (this->byte2 & 0x3) >> 2; }
+		constexpr uint8_t pp() const    { return (this->byte2 & 0x3) >> 0; }
 
 		constexpr bool prefix66() const { return this->pp() == 1; }
 		constexpr bool prefixF3() const { return this->pp() == 2; }

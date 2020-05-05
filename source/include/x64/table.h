@@ -370,4 +370,14 @@ namespace instrad::x64::tables
 	static_assert(ArrayLength(ModRMExt_x87_DF_Mod3_Reg6_RM) == 9, "table invalid");
 	static_assert(ArrayLength(ModRMExt_x87_DF_Mod3_Reg7_RM) == 9, "table invalid");
 
+
+	static_assert(ArrayLength(Vex_Map_1_ModRMExt_71) == 8, "table invalid");
+	static_assert(ArrayLength(Vex_Map_1_ModRMExt_72) == 8, "table invalid");
+	static_assert(ArrayLength(Vex_Map_1_ModRMExt_73) == 8, "table invalid");
+	static_assert(ArrayLength(Vex_Map_1_ModRMExt_AE) == 8, "table invalid");
+	static_assert(ArrayLength(Vex_Map_2_ModRMExt_F3) == 8, "table invalid");
+	static_assert(ArrayLength(VEX_Map_1) == 256, "table invalid");
+	static_assert(ArrayLength(VEX_Map_2) == 256, "table invalid");
+	static_assert(ArrayLength(VEX_Map_3) == 256, "table invalid");
+
 }
