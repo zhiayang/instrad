@@ -357,17 +357,22 @@ namespace instrad::x64
 
 			case OpKind::RegMmx:        return getRegisterOperand(64, mods, RegKind::Vector);
 			case OpKind::RegXmm:        return getRegisterOperand(128, mods, RegKind::Vector);
+			case OpKind::RegYmm:        return getRegisterOperand(256, mods, RegKind::Vector);
 
 			case OpKind::RegMmx_Rm:     return getRegisterOperandFromModRM(64, mods, RegKind::Vector);
 			case OpKind::RegXmm_Rm:     return getRegisterOperandFromModRM(128, mods, RegKind::Vector);
+			case OpKind::RegYmm_Rm:     return getRegisterOperandFromModRM(256, mods, RegKind::Vector);
 
 			case OpKind::RegMmxMem32:   return getRegisterOrMemoryOperand(buf, 64, 32, mods, RegKind::Vector);
 			case OpKind::RegMmxMem64:   return getRegisterOrMemoryOperand(buf, 64, 64, mods, RegKind::Vector);
 
+			case OpKind::RegXmmMem8:    return getRegisterOrMemoryOperand(buf, 128, 8, mods, RegKind::Vector);
 			case OpKind::RegXmmMem16:   return getRegisterOrMemoryOperand(buf, 128, 16, mods, RegKind::Vector);
 			case OpKind::RegXmmMem32:   return getRegisterOrMemoryOperand(buf, 128, 32, mods, RegKind::Vector);
 			case OpKind::RegXmmMem64:   return getRegisterOrMemoryOperand(buf, 128, 64, mods, RegKind::Vector);
 			case OpKind::RegXmmMem128:  return getRegisterOrMemoryOperand(buf, 128, 128, mods, RegKind::Vector);
+
+			case OpKind::RegYmmMem256:  return getRegisterOrMemoryOperand(buf, 256, 256, mods, RegKind::Vector);
 
 			case OpKind::Mem8:          return getMemoryOperand(buf, 8, mods);
 			case OpKind::Mem16:         return getMemoryOperand(buf, 16, mods);
@@ -510,8 +515,13 @@ namespace instrad::x64
 				return MemoryRef(bits, mods.compatibilityMode ? regs::ESI : regs::RSI).setSegment(seg);
 			}
 
-			case OpKind::RegYmm:
-			case OpKind::RegYmmMem256:
+			case OpKind::Reg32_vvvv:
+			case OpKind::Reg64_vvvv:
+			case OpKind::RegXmm_vvvv:
+			case OpKind::RegYmm_vvvv:
+
+			case OpKind::RegXmm_TrailingImm8HighNib:
+			case OpKind::RegYmm_TrailingImm8HighNib:
 
 			case OpKind::Ptr16_16:
 			case OpKind::Ptr16_32:

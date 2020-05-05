@@ -480,23 +480,4 @@ namespace instrad::x64::tables
 		[0xFE] = entry_ext(0xFE, &ModRMExt_FE[0]),
 		[0xFF] = entry_ext(0xFF, &ModRMExt_FF[0]),
 	};
-
-	static_assert(ArrayLength(PrimaryOpcodeMap) == 256, "table invalid");
-	static_assert(ArrayLength(ModRMExt_80) == 8, "table invalid");
-	static_assert(ArrayLength(ModRMExt_81) == 8, "table invalid");
-	static_assert(ArrayLength(ModRMExt_82) == 8, "table invalid");
-	static_assert(ArrayLength(ModRMExt_83) == 8, "table invalid");
-	static_assert(ArrayLength(ModRMExt_8F) == 8, "table invalid");
-	static_assert(ArrayLength(ModRMExt_C0) == 8, "table invalid");
-	static_assert(ArrayLength(ModRMExt_C1) == 8, "table invalid");
-	static_assert(ArrayLength(ModRMExt_C6) == 8, "table invalid");
-	static_assert(ArrayLength(ModRMExt_C7) == 8, "table invalid");
-	static_assert(ArrayLength(ModRMExt_D0) == 8, "table invalid");
-	static_assert(ArrayLength(ModRMExt_D1) == 8, "table invalid");
-	static_assert(ArrayLength(ModRMExt_D2) == 8, "table invalid");
-	static_assert(ArrayLength(ModRMExt_D3) == 8, "table invalid");
-	static_assert(ArrayLength(ModRMExt_F6) == 8, "table invalid");
-	static_assert(ArrayLength(ModRMExt_F7) == 8, "table invalid");
-	static_assert(ArrayLength(ModRMExt_FE) == 8, "table invalid");
-	static_assert(ArrayLength(ModRMExt_FF) == 8, "table invalid");
 }

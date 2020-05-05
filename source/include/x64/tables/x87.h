@@ -126,16 +126,6 @@ namespace instrad::x64::tables
 		[7] = entry_ext_rm(0xD8, &ModRMExt_x87_D8_Mod3_Reg7_RM[0]),
 	};
 
-	static_assert(ArrayLength(ModRMExt_x87_D8) == 8, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_D8_Mod3_Reg0_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_D8_Mod3_Reg1_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_D8_Mod3_Reg2_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_D8_Mod3_Reg3_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_D8_Mod3_Reg4_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_D8_Mod3_Reg5_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_D8_Mod3_Reg6_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_D8_Mod3_Reg7_RM) == 9, "table invalid");
-
 
 
 
@@ -247,17 +237,6 @@ namespace instrad::x64::tables
 		[7] = entry_ext_rm(0xD9, &ModRMExt_x87_D9_Mod3_Reg7_RM[0]),
 	};
 
-	static_assert(ArrayLength(ModRMExt_x87_D9) == 8, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_D9_Mod3_Reg0_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_D9_Mod3_Reg1_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_D9_Mod3_Reg2_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_D9_Mod3_Reg3_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_D9_Mod3_Reg4_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_D9_Mod3_Reg5_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_D9_Mod3_Reg6_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_D9_Mod3_Reg7_RM) == 9, "table invalid");
-
-
 
 
 	constexpr TableEntry ModRMExt_x87_DA_Mod3_Reg0_RM[] = {
@@ -349,16 +328,6 @@ namespace instrad::x64::tables
 		[6] = entry_ext_rm(0xDA, &ModRMExt_x87_DA_Mod3_Reg6_RM[0]),
 		[7] = entry_ext_rm(0xDA, &ModRMExt_x87_DA_Mod3_Reg7_RM[0]),
 	};
-
-	static_assert(ArrayLength(ModRMExt_x87_DA) == 8, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DA_Mod3_Reg0_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DA_Mod3_Reg1_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DA_Mod3_Reg2_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DA_Mod3_Reg3_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DA_Mod3_Reg4_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DA_Mod3_Reg5_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DA_Mod3_Reg6_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DA_Mod3_Reg7_RM) == 9, "table invalid");
 
 
 
@@ -466,16 +435,6 @@ namespace instrad::x64::tables
 		[7] = entry_ext_rm(0xDB, &ModRMExt_x87_DB_Mod3_Reg7_RM[0]),
 	};
 
-	static_assert(ArrayLength(ModRMExt_x87_DB) == 8, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DB_Mod3_Reg0_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DB_Mod3_Reg1_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DB_Mod3_Reg2_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DB_Mod3_Reg3_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DB_Mod3_Reg4_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DB_Mod3_Reg5_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DB_Mod3_Reg6_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DB_Mod3_Reg7_RM) == 9, "table invalid");
-
 
 
 	constexpr TableEntry ModRMExt_x87_DC_Mod3_Reg0_RM[] = {
@@ -579,16 +538,6 @@ namespace instrad::x64::tables
 		[7] = entry_ext_rm(0xDC, &ModRMExt_x87_DC_Mod3_Reg7_RM[0]),
 	};
 
-	static_assert(ArrayLength(ModRMExt_x87_DC) == 8, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DC_Mod3_Reg0_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DC_Mod3_Reg1_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DC_Mod3_Reg2_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DC_Mod3_Reg3_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DC_Mod3_Reg4_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DC_Mod3_Reg5_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DC_Mod3_Reg6_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DC_Mod3_Reg7_RM) == 9, "table invalid");
-
 
 
 	constexpr TableEntry ModRMExt_x87_DD_Mod3_Reg0_RM[] = {
@@ -684,16 +633,6 @@ namespace instrad::x64::tables
 		[6] = entry_ext_rm(0xDD, &ModRMExt_x87_DD_Mod3_Reg6_RM[0]),
 		[7] = entry_ext_rm(0xDD, &ModRMExt_x87_DD_Mod3_Reg7_RM[0]),
 	};
-
-	static_assert(ArrayLength(ModRMExt_x87_DD) == 8, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DD_Mod3_Reg0_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DD_Mod3_Reg1_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DD_Mod3_Reg2_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DD_Mod3_Reg3_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DD_Mod3_Reg4_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DD_Mod3_Reg5_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DD_Mod3_Reg6_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DD_Mod3_Reg7_RM) == 9, "table invalid");
 
 
 
@@ -800,16 +739,6 @@ namespace instrad::x64::tables
 		[7] = entry_ext_rm(0xDE, &ModRMExt_x87_DE_Mod3_Reg7_RM[0]),
 	};
 
-	static_assert(ArrayLength(ModRMExt_x87_DE) == 8, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DE_Mod3_Reg0_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DE_Mod3_Reg1_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DE_Mod3_Reg2_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DE_Mod3_Reg3_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DE_Mod3_Reg4_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DE_Mod3_Reg5_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DE_Mod3_Reg6_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DE_Mod3_Reg7_RM) == 9, "table invalid");
-
 
 
 	constexpr TableEntry ModRMExt_x87_DF_Mod3_Reg0_RM[] = {
@@ -886,16 +815,4 @@ namespace instrad::x64::tables
 		[6] = entry_ext_rm(0xDF, &ModRMExt_x87_DF_Mod3_Reg6_RM[0]),
 		[7] = entry_ext_rm(0xDF, &ModRMExt_x87_DF_Mod3_Reg7_RM[0]),
 	};
-
-	static_assert(ArrayLength(ModRMExt_x87_DF) == 8, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DF_Mod3_Reg0_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DF_Mod3_Reg1_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DF_Mod3_Reg2_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DF_Mod3_Reg3_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DF_Mod3_Reg4_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DF_Mod3_Reg5_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DF_Mod3_Reg6_RM) == 9, "table invalid");
-	static_assert(ArrayLength(ModRMExt_x87_DF_Mod3_Reg7_RM) == 9, "table invalid");
-
-
 }

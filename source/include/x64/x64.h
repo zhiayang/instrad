@@ -122,12 +122,48 @@ namespace instrad::x64
 		uint8_t byte;
 	};
 
+	struct VexPrefix
+	{
+		// note that we put the second byte in the two-byte form in byte2 instead of byte1
+		// because it has the vvvv/L/pp fields, so it's less work.
+		constexpr VexPrefix(uint8_t b2) : prefix(0xC5), byte1(0), byte2(b2) { }
+		constexpr VexPrefix(uint8_t b1, uint8_t b2) : prefix(0xC4), byte1(b1), byte2(b2) { }
+
+		constexpr uint8_t R() const
+		{
+			return this->prefix == 0xC5
+				? ((~this->byte1 & 0x80) >> 7)
+				: ((~this->byte1 & 0x80) >> 7);
+		}
+
+		constexpr uint8_t X() const     { return this->prefix == 0xC5 ? 0x1 : ((~this->byte1 & 0x40) >> 6); }
+		constexpr uint8_t B() const     { return this->prefix == 0xC5 ? 0x1 : ((~this->byte1 & 0x20) >> 5); }
+		constexpr uint8_t W() const     { return this->prefix == 0xC5 ? 0x0 : ((this->byte2 & 0x80) >> 7); }
+		constexpr uint8_t map() const   { return this->prefix == 0xC5 ? 0x1 : this->byte1 & 0x1F; }
+		constexpr uint8_t vvvv() const  { return (~this->byte2 & 0x78) >> 3; }
+		constexpr uint8_t L() const     { return (this->byte2 & 0x4) >> 2; }
+		constexpr uint8_t pp() const    { return (this->byte2 & 0x3) >> 2; }
+
+		constexpr bool prefix66() const { return this->pp() == 1; }
+		constexpr bool prefixF3() const { return this->pp() == 2; }
+		constexpr bool prefixF2() const { return this->pp() == 3; }
+
+		constexpr bool present() const { return this->prefix != 0; }
+		constexpr static VexPrefix none() { auto ret = VexPrefix(0); ret.prefix = 0; return ret; }
+
+	private:
+		uint8_t prefix;
+		uint8_t byte1;
+		uint8_t byte2;
+	};
+
 	struct InstrModifiers
 	{
 		uint8_t opcode = 0;
 
 		ModRM modrm = ModRM::none();
 		RexPrefix rex = RexPrefix::none();
+		VexPrefix vex = VexPrefix::none();
 
 		bool addressSizeOverride = false;
 		bool operandSizeOverride = false;

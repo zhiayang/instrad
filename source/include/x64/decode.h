@@ -58,15 +58,11 @@ namespace instrad::x64
 		size_t m_byteCount = 0;
 	};
 
-	constexpr Instruction decode(Buffer& xs, InstrModifiers& mods, const TableEntry* mainTable, const TableEntry* prefixTable)
+	constexpr Instruction decode(Buffer& xs, InstrModifiers& mods, const TableEntry* table)
 	{
 		// check the main table first
 		mods.opcode = xs.pop();
-		auto entry = mainTable[mods.opcode];
-
-		// if there's no main entry but there's a prefix entry, then use that instead.
-		if(!entry.present() && prefixTable)
-			entry = prefixTable[mods.opcode];
+		auto entry = table[mods.opcode];
 
 		// make a potential modRM
 		bool usedModRM = false;
@@ -107,6 +103,13 @@ namespace instrad::x64
 				// if !rex.W, then use the first entry; if rex.W, use the second.
 				if(mods.rex.W())    entry = ext[1];
 				else                entry = ext[0];
+			}
+			else if(entry.extensionUsesPrefixByte())
+			{
+				if(mods.operandSizeOverride)    entry = ext[1];     // 0x66
+				else if(mods.repnzPrefix)       entry = ext[2];     // 0xF2
+				else if(mods.repPrefix)         entry = ext[3];     // 0xF3
+				else                            entry = ext[0];     // none
 			}
 			else
 			{
@@ -167,6 +170,31 @@ namespace instrad::x64
 		return instr;
 	}
 
+
+	constexpr Instruction decode_VEX(Buffer& buf, InstrModifiers& mods)
+	{
+		// from the AMD manuals, it is evident that all the 3dnow instructions
+		// take a modRM byte. so, we can parse that unconditionally:
+		mods.modrm = ModRM(buf.pop());
+
+		// furthermore, they all have the form OP mmx, mmx/mem64
+		auto op1 = getOperand(buf, OpKind::RegMmx, mods);
+		auto op2 = getOperand(buf, OpKind::RegMmxMem64, mods);
+
+		// now, we should have the opcode at our disposal.
+		auto opcode = buf.pop();
+
+		auto instr = Instruction(tables::SecondaryOpcodeMap_0F_0F_3DNow[opcode].op());
+		instr.setDst(op1);
+		instr.setSrc(op2);
+
+		return instr;
+	}
+
+
+
+
+
 	enum class ExecMode
 	{
 		Legacy,
@@ -206,8 +234,10 @@ namespace instrad::x64
 			else if(xs.match(0x65)) modifiers.segmentOverride = InstrModifiers::SEG_GS;
 			else if(xs.match(0x36)) modifiers.segmentOverride = InstrModifiers::SEG_SS;
 			else if(xs.match(0xF0)) modifiers.lockPrefix = true;
-			else if(xs.match(0xF3)) modifiers.repnzPrefix = false, modifiers.repPrefix = true;
+			else if(xs.match(0xF3)) modifiers.repPrefix = true, modifiers.repnzPrefix = false;
 			else if(xs.match(0xF2)) modifiers.repnzPrefix = true, modifiers.repPrefix = false;
+			else if(xs.match(0xC4)) modifiers.vex = VexPrefix(xs.pop(), xs.pop());
+			else if(xs.match(0xC5)) modifiers.vex = VexPrefix(xs.pop());
 			else                    break;
 		}
 
@@ -216,64 +246,25 @@ namespace instrad::x64
 			modifiers.rex = RexPrefix(xs.pop());
 
 		auto table = tables::PrimaryOpcodeMap;
-		const TableEntry* prefixedTable = nullptr;
-
 		bool is3dnow = false;
+		bool isVEX = false;
 
 		// next, check for escape
 		if(xs.match(0x0F))
 		{
-			if(xs.match(0x0F))
-			{
-				is3dnow = true;
-			}
-			else if(xs.match(0x38))
-			{
-				// sse
-				table = tables::SecondaryOpcodeMap_0F_38_Normal;
-
-				if(modifiers.repnzPrefix)
-					prefixedTable = tables::SecondaryOpcodeMap_0F_38_Prefix_F2;
-
-				else if(modifiers.operandSizeOverride)
-					prefixedTable = tables::SecondaryOpcodeMap_0F_38_Prefix_66;
-
-				else
-					prefixedTable = tables::SecondaryOpcodeMap_0F_38_Prefix_None;
-			}
-			else if(xs.match(0x3A))
-			{
-				// also sse
-				table = tables::SecondaryOpcodeMap_0F_3A_Normal;
-
-				if(modifiers.operandSizeOverride)
-					prefixedTable = tables::SecondaryOpcodeMap_0F_3A_Prefix_66;
-
-				else
-					prefixedTable = tables::SecondaryOpcodeMap_0F_3A_Prefix_None;
-			}
-			else
-			{
-				table = tables::SecondaryOpcodeMap_0F_Normal;
-
-				// check what kind of prefixes we have.
-				if(modifiers.repnzPrefix)
-					prefixedTable = tables::SecondaryOpcodeMap_0F_Prefix_F2;
-
-				else if(modifiers.repPrefix)
-					prefixedTable = tables::SecondaryOpcodeMap_0F_Prefix_F3;
-
-				else if(modifiers.operandSizeOverride)
-					prefixedTable = tables::SecondaryOpcodeMap_0F_Prefix_66;
-
-				else
-					prefixedTable = tables::SecondaryOpcodeMap_0F_Prefix_None;
-			}
+			if(xs.match(0x0F))      is3dnow = true;
+			else if(xs.match(0xC4)) isVEX = true;
+			else if(xs.match(0xC5)) isVEX = true;
+			else if(xs.match(0x38)) table = tables::SecondaryOpcodeMap_0F_38;
+			else if(xs.match(0x3A)) table = tables::SecondaryOpcodeMap_0F_3A;
+			else                    table = tables::SecondaryOpcodeMap_0F;
 		}
 
-		auto ret = is3dnow
-			? decode_3dnow(xs, modifiers)
-			: decode(xs, modifiers, table, prefixedTable);
+		auto ret = [&]() -> auto {
+			if(is3dnow)     return decode_3dnow(xs, modifiers);
+			else if(isVEX)  return decode_VEX(xs, modifiers);
+			else            return decode(xs, modifiers, table);
+		}();
 
 		auto len = xs.ptr() - begin;
 

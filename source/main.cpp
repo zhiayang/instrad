@@ -169,7 +169,7 @@ int main(int argc, char** argv)
 	auto bytes = new uint8_t[length];
 	file.read((char*) &bytes[0], length);
 
-	if constexpr (false)
+	if constexpr (true)
 	{
 		auto buf = instrad::Buffer(test_bytes, sizeof(test_bytes));
 

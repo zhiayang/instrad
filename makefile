@@ -7,7 +7,7 @@ WARNINGS        = -Wno-padded -Wno-cast-align -Wno-unreachable-code -Wno-switch-
 
 COMMON_CFLAGS   = -Wall
 
-CXXFLAGS        = $(COMMON_CFLAGS) -Wno-old-style-cast -std=c++17 -fno-exceptions -fno-rtti
+CXXFLAGS        = $(COMMON_CFLAGS) -Wno-old-style-cast -std=c++17 -fno-exceptions -fno-rtti -ferror-limit=0
 
 CXXSRC          = $(shell find source -iname "*.cpp" -print)
 CXXOBJ          = $(CXXSRC:.cpp=.cpp.o)
@@ -20,10 +20,10 @@ INCLUDES        = -Isource/include
 
 
 all: build/instrad_test
-	@build/instrad_test build/player.bin
+	@build/instrad_test build/samples/player.bin
 
 build/instrad_test: $(CXXOBJ)
-	@$(CXX) $(CXXFLAGS) -o $@ $(CXXOBJ)
+	@$(CXX) $(CXXFLAGS) -o $@ $^
 
 %.cpp.o: %.cpp makefile
 	@echo "  $(notdir $<)"

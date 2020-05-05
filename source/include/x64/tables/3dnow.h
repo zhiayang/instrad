@@ -44,6 +44,4 @@ namespace instrad::x64::tables
 
 		[0xFF] = entry_blank
 	};
-
-	static_assert(ArrayLength(SecondaryOpcodeMap_0F_0F_3DNow) == 256, "table invalid");
 }

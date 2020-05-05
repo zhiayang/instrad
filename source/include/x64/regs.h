@@ -281,6 +281,11 @@ namespace instrad::x64
 			regs::XMM8, regs::XMM9, regs::XMM10, regs::XMM11, regs::XMM12, regs::XMM13, regs::XMM14, regs::XMM15
 		};
 
+		constexpr Register RegisterTable_YMM[] = {
+			regs::YMM0, regs::YMM1, regs::YMM2,  regs::YMM3,  regs::YMM4,  regs::YMM5,  regs::YMM6,  regs::YMM7,
+			regs::YMM8, regs::YMM9, regs::YMM10, regs::YMM11, regs::YMM12, regs::YMM13, regs::YMM14, regs::YMM15
+		};
+
 
 
 
@@ -299,6 +304,7 @@ namespace instrad::x64
 		static_assert(ArrayLength(RegisterTable_x87) == 8, "invalid register table");
 		static_assert(ArrayLength(RegisterTable_MMX) == 8, "invalid register table");
 		static_assert(ArrayLength(RegisterTable_XMM) == 16, "invalid register table");
+		static_assert(ArrayLength(RegisterTable_YMM) == 16, "invalid register table");
 
 		template <size_t N>
 		constexpr Register __getOrInvalid(const Register (&arr)[N], size_t idx)
@@ -318,5 +324,6 @@ namespace instrad::x64
 		constexpr Register getX87(size_t idx)           { return __getOrInvalid(RegisterTable_x87, idx); }
 		constexpr Register getMMX(size_t idx)           { return __getOrInvalid(RegisterTable_MMX, idx); }
 		constexpr Register getXMM(size_t idx)           { return __getOrInvalid(RegisterTable_XMM, idx); }
+		constexpr Register getYMM(size_t idx)           { return __getOrInvalid(RegisterTable_YMM, idx); }
 	}
 }

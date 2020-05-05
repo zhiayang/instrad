@@ -73,6 +73,7 @@ namespace instrad::x64
 		RegMmxMem64,
 
 		RegXmm,
+		RegXmmMem8,
 		RegXmmMem16,
 		RegXmmMem32,
 		RegXmmMem64,
@@ -80,6 +81,14 @@ namespace instrad::x64
 
 		RegYmm,
 		RegYmmMem256,
+
+		Reg32_vvvv,
+		Reg64_vvvv,
+		RegXmm_vvvv,
+		RegYmm_vvvv,
+
+		RegXmm_TrailingImm8HighNib,
+		RegYmm_TrailingImm8HighNib,
 
 		// dumbness
 		Reg32Mem8,
@@ -112,6 +121,7 @@ namespace instrad::x64
 		Reg64_Rm,
 		RegMmx_Rm,
 		RegXmm_Rm,
+		RegYmm_Rm,
 
 
 		Ptr16_16,       // for far calls and jumps
@@ -136,6 +146,7 @@ namespace instrad::x64
 		constexpr bool extensionUsesRMBits() const { return this->m_extensionUsesRMBits; }
 		constexpr bool extensionUsesModBits() const { return this->m_extensionUsesModBits; }
 		constexpr bool extensionUsesRexWBit() const { return this->m_extensionUsesRexWBit; }
+		constexpr bool extensionUsesPrefixByte() const { return this->m_extensionUsesPrefixByte; }
 
 		constexpr int numOperands() const { return this->m_numOperands; }
 		constexpr uint8_t opcode() const { return this->m_opcode; }
@@ -153,6 +164,7 @@ namespace instrad::x64
 		bool m_extensionUsesRMBits = false;
 		bool m_extensionUsesModBits = false;
 		bool m_extensionUsesRexWBit = false;
+		bool m_extensionUsesPrefixByte = false;
 		const TableEntry* m_exttable = nullptr;
 
 		friend constexpr TableEntry entry_none(uint8_t);
@@ -168,6 +180,7 @@ namespace instrad::x64
 		friend constexpr TableEntry entry_ext_rm(uint8_t, const TableEntry*);
 		friend constexpr TableEntry entry_ext_mod(uint8_t, const TableEntry*);
 		friend constexpr TableEntry entry_ext_rexw(uint8_t, const TableEntry*);
+		friend constexpr TableEntry entry_ext_prefix(uint8_t, const TableEntry*);
 
 		friend constexpr TableEntry entry_1_no_modrm(uint8_t, const Op&, OpKind);
 		friend constexpr TableEntry entry_2_no_modrm(uint8_t, const Op&, OpKind, OpKind);
@@ -342,6 +355,19 @@ namespace instrad::x64
 		ret.m_extensionUsesRexWBit = true;
 		return ret;
 	}
+
+	// extend based on no prefix, 0x66, 0xF3, or 0xF2
+	constexpr TableEntry entry_ext_prefix(uint8_t opcode, const TableEntry* ext)
+	{
+		auto ret = TableEntry();
+		ret.m_opcode = opcode;
+		ret.m_exttable = ext;
+		ret.m_extensionUsesPrefixByte = true;
+		return ret;
+	}
+
+
+
 
 	// all the entry_N functions imply that the instructions accept a modRM byte, except entry_0
 	// (but there is an entry_0_modrm to specify that a 0-operand opcode needs modRM).
