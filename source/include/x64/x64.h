@@ -132,7 +132,7 @@ namespace instrad::x64
 		constexpr uint8_t R() const
 		{
 			return this->prefix == 0xC5
-				? ((~this->byte1 & 0x80) >> 7)
+				? ((~this->byte2 & 0x80) >> 7)
 				: ((~this->byte1 & 0x80) >> 7);
 		}
 
