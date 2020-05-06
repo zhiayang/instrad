@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include "buffer.h"
+#include "../buffer.h"
 
 namespace instrad::x64
 {

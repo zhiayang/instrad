@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "x64/ops.h"
+#include "../ops.h"
 
 namespace instrad::x64
 {

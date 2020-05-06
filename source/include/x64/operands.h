@@ -79,22 +79,17 @@ namespace instrad::x64
 
 	constexpr MemoryRef decodeSIB(Buffer& buf, const InstrModifiers& mods, bool* didReadDisplacement)
 	{
-		union {
-			struct {
-				uint8_t base  : 3;
-				uint8_t index : 3;
-				uint8_t scale : 2;
-			};
+		auto sib = buf.pop();
 
-			uint8_t byte = 0;
-		} sib;
+		uint8_t base  = ((sib & 0x07) >> 0);
+		uint8_t index = ((sib & 0x38) >> 3);
+		uint8_t scale = ((sib & 0xC0) >> 6);
 
-		sib.byte = buf.pop();
 		auto compat = mods.compatibilityMode;
 
 		auto mem = MemoryRef();
 
-		if(sib.base == 5)
+		if(base == 5)
 		{
 			if(mods.modrm.mod() == 0)
 			{
@@ -122,19 +117,19 @@ namespace instrad::x64
 		else
 		{
 			mem.setBase((compat || mods.addressSizeOverride)
-				? regs::get32Bit(sib.base)
-				: regs::get64Bit(sib.base | (mods.rex.B() << 3))
+				? regs::get32Bit(base)
+				: regs::get64Bit(base | (mods.rex.B() << 3))
 			);
 		}
 
-		auto idxIdx = sib.index | (mods.rex.B() << 3);
+		auto idxIdx = index | (mods.rex.B() << 3);
 		mem.setIndex((compat || mods.addressSizeOverride)
-			? regs::get32Bit(sib.index)
+			? regs::get32Bit(index)
 			// you can't use RSP as an index
 			: (idxIdx == 4 ? regs::NONE : regs::get64Bit(idxIdx))
 		);
 
-		mem.setScale(1 << sib.scale);
+		mem.setScale(1 << scale);
 		return mem;
 	}
 
@@ -585,11 +580,14 @@ namespace instrad::x64
 			case OpKind::Ptr16_16:
 			case OpKind::Ptr16_32:
 				// not supported
-				printf("unsupported operand!\n");
-				return regs::R15;
+				return regs::INVALID;
 
 			case OpKind::None:
 				return { };
+
 		}
+
+		// gcc is too stupid to realise that the switch covers all options
+		return { };
 	}
 }
