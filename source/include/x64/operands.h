@@ -522,6 +522,8 @@ namespace instrad::x64
 			case OpKind::MemoryOfs64: {
 				// kekw
 				int bits = 8 * (1 << ((int) kind - (int) OpKind::MemoryOfs8));
+				if(bits == 32 && mods.rex.W())
+					bits = 64;
 
 				auto seg = getSegmentOfOverride(mods.segmentOverride);
 				if(mods.compatibilityMode)

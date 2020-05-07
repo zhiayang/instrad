@@ -101,7 +101,7 @@ static std::string print_intel(const instrad::x64::Instruction& instr, uint64_t 
 		col += 3;
 	}
 
-	while(col++ < 25)
+	while(col++ < 30)
 		margin += zpr::sprint(" ");
 
 	std::string prefix = "";
@@ -109,28 +109,178 @@ static std::string print_intel(const instrad::x64::Instruction& instr, uint64_t 
 	if(instr.repPrefix())   prefix = "rep ";
 	if(instr.repnzPrefix()) prefix = "repnz ";
 
-	if(instr.operandCount() == 0)
-		return margin + prefix + std::string(instr.op().mnemonic());
-
-	else if(instr.operandCount() == 1)
-		return margin + prefix + zpr::sprint("%s %s", instr.op().mnemonic(), print_operand(instr.dst()));
-
+	auto ret = zpr::sprint("%s%s%s ", margin, prefix, std::string(instr.op().mnemonic()));
+	if(instr.operandCount() == 1)
+	{
+		ret += print_operand(instr.dst());
+	}
+	else if(instr.operandCount() == 2)
+	{
+		ret += print_operand(instr.dst()); ret += ", ";
+		ret += print_operand(instr.src());
+	}
+	else if(instr.operandCount() == 3)
+	{
+		ret += print_operand(instr.dst()); ret += ", ";
+		ret += print_operand(instr.src()); ret += ", ";
+		ret += print_operand(instr.ext());
+	}
 	else
-		return margin + prefix + zpr::sprint("%s %s, %s", instr.op().mnemonic(), print_operand(instr.dst()), print_operand(instr.src()));
+	{
+		ret += print_operand(instr.dst()); ret += ", ";
+		ret += print_operand(instr.src()); ret += ", ";
+		ret += print_operand(instr.ext()); ret += ", ";
+		ret += print_operand(instr.op4());
+	}
+
+	return ret;
 }
 
+
+
+static std::string print_att(const instrad::x64::Instruction& instr, uint64_t ip)
+{
+	std::string instr_suffix = "";
+
+	auto print_operand = [&ip, &instr_suffix](const instrad::x64::Operand& op) -> std::string {
+		if(op.isRegister())
+		{
+			return zpr::sprint("%%%s", op.reg().name());
+		}
+		else if(op.isImmediate())
+		{
+			int64_t value = op.imm();
+			if(op.immediateSize() == 8)  value = (uint8_t) value;   instr_suffix = "b";
+			if(op.immediateSize() == 16) value = (uint16_t) value;  instr_suffix = "w";
+			if(op.immediateSize() == 32) value = (uint32_t) value;  instr_suffix = "l";
+			if(op.immediateSize() == 64) value = (uint64_t) value;  instr_suffix = "absq";
+
+			// printf("[%#lx]", op.imm());
+			return zpr::sprint("$%#lx", value);
+		}
+		else if(op.isRelativeOffset())
+		{
+			return zpr::sprint("%#lx", ip + op.ofs().offset());
+		}
+		else if(op.isMemory())
+		{
+			auto& mem = op.mem();
+			auto& base = mem.base();
+			auto& idx = mem.index();
+
+			switch(mem.bits())
+			{
+				case 8:     instr_suffix = "b"; break;
+				case 16:    instr_suffix = "w"; break;
+				case 32:    instr_suffix = "l"; break;
+				case 64:    instr_suffix = "q"; break;
+
+				// there should be no ambiguity in these cases,
+				// so in theory we should not need a suffix.
+				// (either way, idk what the suffixes would be,
+				// and there don't seem to be any defined)
+				default:
+					break;
+			}
+
+			if(mem.isDisplacement64Bits())
+				instr_suffix = "abs" + instr_suffix;
+
+			std::string segment = mem.segment().present()
+				? zpr::sprint("%%%s:", mem.segment().name())
+				: "";
+
+			// you can't scale a displacement, so we're fine here.
+			if(!base.present() && !idx.present())
+				return segment + zpr::sprint("%#x", mem.displacement());
+
+			std::string tmp = segment;
+			if(op.mem().displacement() != 0)
+				tmp += zpr::sprint("%#lx", op.mem().displacement());
+
+			tmp += "(";
+
+			if(base.present())
+				tmp += zpr::sprint("%%%s", base.name());
+
+			if(idx.present())
+				tmp += zpr::sprint(", %%%s", idx.name());
+
+			if(op.mem().scale() != 1)
+				tmp += zpr::sprint(", %d", op.mem().scale());
+
+			tmp += ")";
+			return tmp;
+		}
+
+		return "??";
+	};
+
+	std::string margin = "    ";
+
+	// print the bytes
+	size_t col = 0;
+	for(size_t i = 0; i < instr.numBytes(); i++)
+	{
+		margin += zpr::sprint("%02x ", instr.bytes()[i]);
+		col += 3;
+	}
+
+	while(col++ < 30)
+		margin += zpr::sprint(" ");
+
+	std::string prefix = "";
+	if(instr.lockPrefix())  prefix = "lock ";
+	if(instr.repPrefix())   prefix = "rep ";
+	if(instr.repnzPrefix()) prefix = "repnz ";
+
+
+	// only print the instruction last, because we need to parse the operand to know the suffix.
+
+	std::string operands;
+	if(instr.operandCount() == 1)
+	{
+		operands += print_operand(instr.dst());
+	}
+	else if(instr.operandCount() == 2)
+	{
+		operands += print_operand(instr.src()); operands += ", ";
+		operands += print_operand(instr.dst());
+	}
+	else if(instr.operandCount() == 3)
+	{
+		operands += print_operand(instr.ext()); operands += ", ";
+		operands += print_operand(instr.src()); operands += ", ";
+		operands += print_operand(instr.dst());
+	}
+	else
+	{
+		operands += print_operand(instr.op4()); operands += ", ";
+		operands += print_operand(instr.ext()); operands += ", ";
+		operands += print_operand(instr.src()); operands += ", ";
+		operands += print_operand(instr.dst());
+	}
+
+	return zpr::sprint("%s%s%s%s %s", margin, prefix, std::string(instr.op().mnemonic()), instr_suffix, operands);
+}
+
+
+
+
+
+
+
+
+
 constexpr uint8_t test_bytes[] = {
-	0xC5, 0xFB, 0x10, 0x07, 0xC5, 0xFB, 0x10, 0xC1, 0xC5, 0xF8, 0xAE, 0x10, 0xC4, 0xE2, 0x79, 0x18, 0x00, 0xC4, 0xE2, 0x79, 0x18, 0xC0,
-	0xC5, 0xFB, 0x10, 0x07, 0xC5, 0xFB, 0x10, 0xC1, 0xC5, 0xF8, 0xAE, 0x10, 0xC4, 0xE2, 0x79, 0x18, 0x00, 0xC4, 0xE2, 0x79, 0x18, 0xC0,
-	0xC5, 0xFB, 0x10, 0x07, 0xC5, 0xFB, 0x10, 0xC1, 0xC5, 0xF8, 0xAE, 0x10, 0xC4, 0xE2, 0x79, 0x18, 0x00, 0xC4, 0xE2, 0x79, 0x18, 0xC0,
-	0xC5, 0xFB, 0x10, 0x07, 0xC5, 0xFB, 0x10, 0xC1, 0xC5, 0xF8, 0xAE, 0x10, 0xC4, 0xE2, 0x79, 0x18, 0x00, 0xC4, 0xE2, 0x79, 0x18, 0xC0,
-	0xC5, 0xFB, 0x10, 0x07, 0xC5, 0xFB, 0x10, 0xC1, 0xC5, 0xF8, 0xAE, 0x10, 0xC4, 0xE2, 0x79, 0x18, 0x00, 0xC4, 0xE2, 0x79, 0x18, 0xC0,
 	0xC5, 0xFB, 0x10, 0x07, 0xC5, 0xFB, 0x10, 0xC1, 0xC5, 0xF8, 0xAE, 0x10, 0xC4, 0xE2, 0x79, 0x18, 0x00, 0xC4, 0xE2, 0x79, 0x18, 0xC0,
 
 	0x48, 0x8d, 0x46, 0x10, 0x48, 0x89, 0x06, 0x48, 0x8b, 0x44, 0x24, 0x10, 0x48, 0x39, 0xd8,
 	0x75, 0x86, 0x66, 0x0f, 0x6f, 0x4c, 0x24, 0x20, 0x0f, 0x11, 0x4e, 0x10, 0xeb, 0x86, 0x65, 0xf3, 0xa4,
 
 	0x49, 0x8b, 0x7c, 0x24, 0x30,
+
+	0x48, 0xa1, 0x55, 0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55, 0xaa
 };
 
 constexpr instrad::x64::Instruction test_fixed()
@@ -175,6 +325,7 @@ int main(int argc, char** argv)
 		while((ssize_t) buf.remaining() > 0)
 		{
 			auto instr = instrad::x64::read(buf, instrad::x64::ExecMode::Long);
+			zpr::print("%4x:  %s\n", ip, print_att(instr, ip));
 			zpr::print("%4x:  %s\n", ip, print_intel(instr, ip));
 
 			ip += instr.numBytes();
