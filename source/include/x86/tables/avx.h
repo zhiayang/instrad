@@ -6,7 +6,7 @@
 
 #include "entry.h"
 
-namespace instrad::x64
+namespace instrad::x86
 {
 	// VEX is a special child.
 	// note: to keep things aligned, we use "mod0" and "mod3", even though the distinction

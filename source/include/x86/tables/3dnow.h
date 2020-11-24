@@ -6,7 +6,7 @@
 
 #include "entry.h"
 
-namespace instrad::x64::tables
+namespace instrad::x86::tables
 {
 	constexpr TableEntry SecondaryOpcodeMap_0F_0F_3DNow[] = {
 		/*00*/ entry_blank,

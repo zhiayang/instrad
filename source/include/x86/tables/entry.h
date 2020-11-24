@@ -6,7 +6,7 @@
 
 #include "../ops.h"
 
-namespace instrad::x64
+namespace instrad::x86
 {
 	enum class OpKind
 	{
@@ -24,6 +24,14 @@ namespace instrad::x64
 		Imm16,
 		Imm32,
 		Imm64,          // the 0xB8 mov is the only instruction that uses a real 8-byte immediate
+
+		// 16 bits in legacy mode, 32 bits in compat mode, 64 bits in long mode
+		ImmNative,
+		RegNative,
+		RegMemNative,
+		MemoryOfsNative,
+		ImplicitNativeAX,
+		RelNative_16or32_Offset,
 
 		SignExtImm8,
 		SignExtImm32,
@@ -98,11 +106,11 @@ namespace instrad::x64
 
 		// these always use ES segment, you can't override
 		ImplicitMem8_ES_EDI,
-		ImplicitMem32_ES_EDI,
+		ImplicitMemNative_ES_DI,
 
 		// these can use any segment you override with
 		ImplicitMem8_ESI,
-		ImplicitMem32_ESI,
+		ImplicitMemNative_SI,
 
 		ImplicitXMM0,
 
@@ -128,8 +136,8 @@ namespace instrad::x64
 		VSIB_Ymm32,
 		VSIB_Ymm64,
 
-		Ptr16_16,       // for far calls and jumps
-		Ptr16_32,
+		ImmSegOfs,   // eg. jmp 0x7C0:0x0
+		MemSegOfs,   // eg. jmp far [si]
 
 		None,
 	};
@@ -383,5 +391,5 @@ namespace instrad::x64
 	constexpr TableEntry entry_blank = entry_none(0);
 
 	template <typename T, size_t N>
-	constexpr size_t ArrayLength(const T (&arr)[N]) { return N; }
+	constexpr size_t ArrayLength(const T (&)[N]) { return N; }
 }

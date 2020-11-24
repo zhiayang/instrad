@@ -9,7 +9,7 @@
 #include "table.h"
 #include "operands.h"
 
-namespace instrad::x64
+namespace instrad::x86
 {
 	struct Instruction
 	{
@@ -19,7 +19,7 @@ namespace instrad::x64
 		constexpr void setSrc(const Operand& x) { this->m_src = x; this->m_operandCount = 2; }
 		constexpr void setExt(const Operand& x) { this->m_ext = x; this->m_operandCount = 3; }
 		constexpr void setOp4(const Operand& x) { this->m_op4 = x; this->m_operandCount = 4; }
-		constexpr void setBytes(const uint8_t* bytes, size_t n) { this->m_bytes = bytes; this->m_byteCount = n; }
+		constexpr void setLength(size_t n) { this->m_length = n; }
 
 		constexpr void addLockPrefix() { this->m_prefixLock = true; }
 		constexpr void addRepPrefix() { this->m_prefixRep = true; }
@@ -29,6 +29,7 @@ namespace instrad::x64
 		constexpr bool repPrefix() const { return this->m_prefixRep; }
 		constexpr bool repnzPrefix() const { return this->m_prefixRepnz; }
 
+		constexpr size_t length() const { return this->m_length; }
 
 		constexpr const Operand& src() const { return this->m_src; }
 		constexpr const Operand& dst() const { return this->m_dst; }
@@ -38,8 +39,8 @@ namespace instrad::x64
 
 		constexpr int operandCount() const { return this->m_operandCount; }
 
-		constexpr const uint8_t* bytes() const { return this->m_bytes; }
-		constexpr size_t numBytes() const { return this->m_byteCount; }
+		constexpr const InstrModifiers& mods() const { return this->m_mods; }
+		constexpr void setMods(InstrModifiers mods) { this->m_mods = mods; }
 
 	private:
 		Op m_op;
@@ -57,10 +58,12 @@ namespace instrad::x64
 		Operand m_ext = { };
 		Operand m_op4 = { };
 
-		const uint8_t* m_bytes = 0;
-		size_t m_byteCount = 0;
+		size_t m_length = 0;
+
+		InstrModifiers m_mods = { };
 	};
 
+	template <typename Buffer>
 	constexpr Instruction decode(Buffer& xs, InstrModifiers& mods, const TableEntry* table)
 	{
 		// check the main table first
@@ -157,6 +160,7 @@ namespace instrad::x64
 		}
 	}
 
+	template <typename Buffer>
 	constexpr Instruction decode_3dnow(Buffer& buf, InstrModifiers& mods)
 	{
 		// from the AMD manuals, it is evident that all the 3dnow instructions
@@ -177,6 +181,7 @@ namespace instrad::x64
 		return instr;
 	}
 
+	template <typename Buffer>
 	constexpr Instruction decode_VEX(Buffer& buf, InstrModifiers& mods)
 	{
 		// make a fake REX using the bits in the VEX. this ensures that all of our
@@ -262,9 +267,10 @@ namespace instrad::x64
 	};
 
 	// this is mostly a state machine; see figure 1-1 in the AMD manual, volume 3.
+	template <typename Buffer>
 	constexpr Instruction read(Buffer& xs, ExecMode mode)
 	{
-		auto begin = xs.ptr();
+		auto begin = xs.position();
 
 		auto modifiers = InstrModifiers();
 		switch(mode)
@@ -295,9 +301,31 @@ namespace instrad::x64
 			else if(xs.match(0xF0)) modifiers.lockPrefix = true;
 			else if(xs.match(0xF3)) modifiers.repPrefix = true, modifiers.repnzPrefix = false;
 			else if(xs.match(0xF2)) modifiers.repnzPrefix = true, modifiers.repPrefix = false;
-			else if(xs.match(0xC4)) modifiers.vex = VexPrefix(xs.pop(), xs.pop());
-			else if(xs.match(0xC5)) modifiers.vex = VexPrefix(xs.pop());
-			else                    break;
+			else
+			{
+				// here's the thing: if we're in long mode, then C4 and C5 always decode to a VEX prefix,
+				// and LES/LDS are straight up not supported.
+				// if not, then we need to look at the top 2 bits of the following modRM byte.
+				// if it's 11 (ie. 3), then it signifies a register operand, which is illegal
+				// (in the rm position) for LES and LDS; in that case, we decode a VEX prefix.
+				// if not, we ignore it.
+				if(auto op = xs.peek(); op == 0xC4 || op == 0xC5)
+				{
+					if(auto modrm = xs.peek(1); mode == ExecMode::Long || ((modrm & 0xC0) == 0xC0))
+					{
+						if(op == 0xC4) modifiers.vex = VexPrefix(xs.pop(), xs.pop());
+						if(op == 0xC5) modifiers.vex = VexPrefix(xs.pop());
+					}
+					else
+					{
+						break;
+					}
+				}
+				else
+				{
+					break;
+				}
+			}
 		}
 
 		// next, REX prefix.
@@ -322,9 +350,8 @@ namespace instrad::x64
 			else                        return decode(xs, modifiers, table);
 		}();
 
-		auto len = xs.ptr() - begin;
-
-		ret.setBytes(begin, len);
+		ret.setLength(xs.position() - begin);
+		ret.setMods(modifiers);
 		return ret;
 	}
 }

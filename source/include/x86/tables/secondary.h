@@ -6,7 +6,7 @@
 
 #include "entry.h"
 
-namespace instrad::x64::tables
+namespace instrad::x86::tables
 {
 	// group 6
 	constexpr TableEntry ModRMExt_0F_00[] = {
@@ -1129,13 +1129,13 @@ namespace instrad::x64::tables
 		/*17*/ entry_ext_prefix(0x17, &PrefixExt_0F_17[0]),
 
 		/*18*/ entry_ext(0x18, &ModRMExt_0F_18[0]),
-		/*19*/ entry_1(0x19, ops::NOP, OpKind::RegMem32),
-		/*1A*/ entry_1(0x1A, ops::NOP, OpKind::RegMem32),
-		/*1B*/ entry_1(0x1B, ops::NOP, OpKind::RegMem32),
-		/*1C*/ entry_1(0x1C, ops::NOP, OpKind::RegMem32),
-		/*1D*/ entry_1(0x1D, ops::NOP, OpKind::RegMem32),
-		/*1E*/ entry_1(0x1E, ops::NOP, OpKind::RegMem32),
-		/*1F*/ entry_1(0x1F, ops::NOP, OpKind::RegMem32),
+		/*19*/ entry_1(0x19, ops::NOP, OpKind::RegMemNative),
+		/*1A*/ entry_1(0x1A, ops::NOP, OpKind::RegMemNative),
+		/*1B*/ entry_1(0x1B, ops::NOP, OpKind::RegMemNative),
+		/*1C*/ entry_1(0x1C, ops::NOP, OpKind::RegMemNative),
+		/*1D*/ entry_1(0x1D, ops::NOP, OpKind::RegMemNative),
+		/*1E*/ entry_1(0x1E, ops::NOP, OpKind::RegMemNative),
+		/*1F*/ entry_1(0x1F, ops::NOP, OpKind::RegMemNative),
 
 		/*20*/ entry_2(0x20, ops::MOV, OpKind::Reg64_Rm, OpKind::ControlReg),  // the special registers always go in the modRM.reg slot
 		/*21*/ entry_2(0x21, ops::MOV, OpKind::Reg64_Rm, OpKind::DebugReg),
@@ -1173,23 +1173,23 @@ namespace instrad::x64::tables
 		/*3E*/ entry_blank,
 		/*3F*/ entry_blank,
 
-		/*40*/ entry_2(0x40, ops::CMOVO,  OpKind::Reg32, OpKind::RegMem32),
-		/*41*/ entry_2(0x41, ops::CMOVNO, OpKind::Reg32, OpKind::RegMem32),
-		/*42*/ entry_2(0x42, ops::CMOVB,  OpKind::Reg32, OpKind::RegMem32),
-		/*43*/ entry_2(0x43, ops::CMOVNB, OpKind::Reg32, OpKind::RegMem32),
-		/*44*/ entry_2(0x44, ops::CMOVZ,  OpKind::Reg32, OpKind::RegMem32),
-		/*45*/ entry_2(0x45, ops::CMOVNZ, OpKind::Reg32, OpKind::RegMem32),
-		/*46*/ entry_2(0x46, ops::CMOVNA, OpKind::Reg32, OpKind::RegMem32),
-		/*47*/ entry_2(0x47, ops::CMOVA,  OpKind::Reg32, OpKind::RegMem32),
+		/*40*/ entry_2(0x40, ops::CMOVO,  OpKind::RegNative, OpKind::RegMemNative),
+		/*41*/ entry_2(0x41, ops::CMOVNO, OpKind::RegNative, OpKind::RegMemNative),
+		/*42*/ entry_2(0x42, ops::CMOVB,  OpKind::RegNative, OpKind::RegMemNative),
+		/*43*/ entry_2(0x43, ops::CMOVNB, OpKind::RegNative, OpKind::RegMemNative),
+		/*44*/ entry_2(0x44, ops::CMOVZ,  OpKind::RegNative, OpKind::RegMemNative),
+		/*45*/ entry_2(0x45, ops::CMOVNZ, OpKind::RegNative, OpKind::RegMemNative),
+		/*46*/ entry_2(0x46, ops::CMOVNA, OpKind::RegNative, OpKind::RegMemNative),
+		/*47*/ entry_2(0x47, ops::CMOVA,  OpKind::RegNative, OpKind::RegMemNative),
 
-		/*48*/ entry_2(0x48, ops::CMOVS,  OpKind::Reg32, OpKind::RegMem32),
-		/*49*/ entry_2(0x49, ops::CMOVNS, OpKind::Reg32, OpKind::RegMem32),
-		/*4A*/ entry_2(0x4A, ops::CMOVP,  OpKind::Reg32, OpKind::RegMem32),
-		/*4B*/ entry_2(0x4B, ops::CMOVNP, OpKind::Reg32, OpKind::RegMem32),
-		/*4C*/ entry_2(0x4C, ops::CMOVL,  OpKind::Reg32, OpKind::RegMem32),
-		/*4D*/ entry_2(0x4D, ops::CMOVGE, OpKind::Reg32, OpKind::RegMem32),
-		/*4E*/ entry_2(0x4E, ops::CMOVLE, OpKind::Reg32, OpKind::RegMem32),
-		/*4F*/ entry_2(0x4F, ops::CMOVG,  OpKind::Reg32, OpKind::RegMem32),
+		/*48*/ entry_2(0x48, ops::CMOVS,  OpKind::RegNative, OpKind::RegMemNative),
+		/*49*/ entry_2(0x49, ops::CMOVNS, OpKind::RegNative, OpKind::RegMemNative),
+		/*4A*/ entry_2(0x4A, ops::CMOVP,  OpKind::RegNative, OpKind::RegMemNative),
+		/*4B*/ entry_2(0x4B, ops::CMOVNP, OpKind::RegNative, OpKind::RegMemNative),
+		/*4C*/ entry_2(0x4C, ops::CMOVL,  OpKind::RegNative, OpKind::RegMemNative),
+		/*4D*/ entry_2(0x4D, ops::CMOVGE, OpKind::RegNative, OpKind::RegMemNative),
+		/*4E*/ entry_2(0x4E, ops::CMOVLE, OpKind::RegNative, OpKind::RegMemNative),
+		/*4F*/ entry_2(0x4F, ops::CMOVG,  OpKind::RegNative, OpKind::RegMemNative),
 
 		/*50*/ entry_ext_prefix(0x50, &PrefixExt_0F_50[0]),
 		/*51*/ entry_ext_prefix(0x51, &PrefixExt_0F_51[0]),
@@ -1245,23 +1245,23 @@ namespace instrad::x64::tables
 		/*7E*/ entry_ext_prefix(0x7E, &PrefixExt_0F_7E[0]),
 		/*7F*/ entry_ext_prefix(0x7F, &PrefixExt_0F_7F[0]),
 
-		/*80*/ entry_1_no_modrm(0x80, ops::JO,  OpKind::Rel32Offset),
-		/*81*/ entry_1_no_modrm(0x81, ops::JNO, OpKind::Rel32Offset),
-		/*82*/ entry_1_no_modrm(0x82, ops::JB,  OpKind::Rel32Offset),
-		/*83*/ entry_1_no_modrm(0x83, ops::JNB, OpKind::Rel32Offset),
-		/*84*/ entry_1_no_modrm(0x84, ops::JZ,  OpKind::Rel32Offset),
-		/*85*/ entry_1_no_modrm(0x85, ops::JNZ, OpKind::Rel32Offset),
-		/*86*/ entry_1_no_modrm(0x86, ops::JNA, OpKind::Rel32Offset),
-		/*87*/ entry_1_no_modrm(0x87, ops::JA,  OpKind::Rel32Offset),
+		/*80*/ entry_1_no_modrm(0x80, ops::JO,  OpKind::RelNative_16or32_Offset),
+		/*81*/ entry_1_no_modrm(0x81, ops::JNO, OpKind::RelNative_16or32_Offset),
+		/*82*/ entry_1_no_modrm(0x82, ops::JB,  OpKind::RelNative_16or32_Offset),
+		/*83*/ entry_1_no_modrm(0x83, ops::JNB, OpKind::RelNative_16or32_Offset),
+		/*84*/ entry_1_no_modrm(0x84, ops::JZ,  OpKind::RelNative_16or32_Offset),
+		/*85*/ entry_1_no_modrm(0x85, ops::JNZ, OpKind::RelNative_16or32_Offset),
+		/*86*/ entry_1_no_modrm(0x86, ops::JNA, OpKind::RelNative_16or32_Offset),
+		/*87*/ entry_1_no_modrm(0x87, ops::JA,  OpKind::RelNative_16or32_Offset),
 
-		/*88*/ entry_1_no_modrm(0x88, ops::JS,  OpKind::Rel32Offset),
-		/*89*/ entry_1_no_modrm(0x89, ops::JNS, OpKind::Rel32Offset),
-		/*8A*/ entry_1_no_modrm(0x8A, ops::JP,  OpKind::Rel32Offset),
-		/*8B*/ entry_1_no_modrm(0x8B, ops::JNP, OpKind::Rel32Offset),
-		/*8C*/ entry_1_no_modrm(0x8C, ops::JL,  OpKind::Rel32Offset),
-		/*8D*/ entry_1_no_modrm(0x8D, ops::JGE, OpKind::Rel32Offset),
-		/*8E*/ entry_1_no_modrm(0x8E, ops::JLE, OpKind::Rel32Offset),
-		/*8F*/ entry_1_no_modrm(0x8F, ops::JG,  OpKind::Rel32Offset),
+		/*88*/ entry_1_no_modrm(0x88, ops::JS,  OpKind::RelNative_16or32_Offset),
+		/*89*/ entry_1_no_modrm(0x89, ops::JNS, OpKind::RelNative_16or32_Offset),
+		/*8A*/ entry_1_no_modrm(0x8A, ops::JP,  OpKind::RelNative_16or32_Offset),
+		/*8B*/ entry_1_no_modrm(0x8B, ops::JNP, OpKind::RelNative_16or32_Offset),
+		/*8C*/ entry_1_no_modrm(0x8C, ops::JL,  OpKind::RelNative_16or32_Offset),
+		/*8D*/ entry_1_no_modrm(0x8D, ops::JGE, OpKind::RelNative_16or32_Offset),
+		/*8E*/ entry_1_no_modrm(0x8E, ops::JLE, OpKind::RelNative_16or32_Offset),
+		/*8F*/ entry_1_no_modrm(0x8F, ops::JG,  OpKind::RelNative_16or32_Offset),
 
 		/*90*/ entry_1(0x90, ops::SETO,  OpKind::RegMem8),
 		/*91*/ entry_1(0x91, ops::SETNO, OpKind::RegMem8),
@@ -1301,10 +1301,10 @@ namespace instrad::x64::tables
 
 		/*B0*/ entry_2(0xB0, ops::CMPXCHG, OpKind::RegMem8, OpKind::Reg8),
 		/*B1*/ entry_2(0xB1, ops::CMPXCHG, OpKind::RegMem32, OpKind::Reg32),
-		/*B2*/ entry_2(0xB2, ops::LSS,     OpKind::Reg32, OpKind::Ptr16_32),
+		/*B2*/ entry_2(0xB2, ops::LSS,     OpKind::RegNative, OpKind::MemSegOfs),
 		/*B3*/ entry_2(0xB3, ops::BTR,     OpKind::RegMem32, OpKind::Reg32),
-		/*B4*/ entry_2(0xB4, ops::LFS,     OpKind::Reg32, OpKind::Ptr16_32),
-		/*B5*/ entry_2(0xB5, ops::LGS,     OpKind::Reg32, OpKind::Ptr16_32),
+		/*B4*/ entry_2(0xB4, ops::LFS,     OpKind::RegNative, OpKind::MemSegOfs),
+		/*B5*/ entry_2(0xB5, ops::LGS,     OpKind::RegNative, OpKind::MemSegOfs),
 		/*B6*/ entry_2(0xB6, ops::MOVZX,   OpKind::Reg32, OpKind::RegMem8),
 		/*B7*/ entry_2(0xB7, ops::MOVZX,   OpKind::Reg32, OpKind::RegMem16),
 

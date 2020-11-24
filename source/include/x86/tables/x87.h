@@ -6,7 +6,7 @@
 
 #include "entry.h"
 
-namespace instrad::x64::tables
+namespace instrad::x86::tables
 {
 	// ok, so this is quite messy. the x87 instruction set will need 2-level extension tables
 	// for most opcodes; from the AMD manuals, the row hinges on modRM.reg, and the column

@@ -13,7 +13,7 @@
 #include "tables/avx.h"
 
 
-namespace instrad::x64::tables
+namespace instrad::x86::tables
 {
 	static_assert(ArrayLength(PrimaryOpcodeMap) == 256, "table invalid");
 	static_assert(ArrayLength(ModRMExt_80) == 8, "table invalid");

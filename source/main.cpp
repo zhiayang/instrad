@@ -11,11 +11,11 @@
 
 #include "zpr.h"
 #include "buffer.h"
-#include "x64/decode.h"
+#include "x86/decode.h"
 
-static std::string print_intel(const instrad::x64::Instruction& instr, uint64_t ip)
+static std::string print_intel(const instrad::x86::Instruction& instr, uint64_t ip, const uint8_t* bytes, size_t len)
 {
-	auto print_operand = [&ip](const instrad::x64::Operand& op) -> std::string {
+	auto print_operand = [&ip](const instrad::x86::Operand& op) -> std::string {
 		if(op.isRegister())
 		{
 			return zpr::sprint("%s", op.reg().name());
@@ -95,9 +95,9 @@ static std::string print_intel(const instrad::x64::Instruction& instr, uint64_t 
 
 	// print the bytes
 	size_t col = 0;
-	for(size_t i = 0; i < instr.numBytes(); i++)
+	for(size_t i = 0; i < len; i++)
 	{
-		margin += zpr::sprint("%02x ", instr.bytes()[i]);
+		margin += zpr::sprint("%02x ", bytes[i]);
 		col += 3;
 	}
 
@@ -138,11 +138,11 @@ static std::string print_intel(const instrad::x64::Instruction& instr, uint64_t 
 
 
 
-static std::string print_att(const instrad::x64::Instruction& instr, uint64_t ip)
+static std::string print_att(const instrad::x86::Instruction& instr, uint64_t ip, const uint8_t* bytes, size_t len)
 {
 	std::string instr_suffix = "";
 
-	auto print_operand = [&ip, &instr_suffix](const instrad::x64::Operand& op) -> std::string {
+	auto print_operand = [&ip, &instr_suffix](const instrad::x86::Operand& op) -> std::string {
 		if(op.isRegister())
 		{
 			return zpr::sprint("%%%s", op.reg().name());
@@ -220,9 +220,9 @@ static std::string print_att(const instrad::x64::Instruction& instr, uint64_t ip
 
 	// print the bytes
 	size_t col = 0;
-	for(size_t i = 0; i < instr.numBytes(); i++)
+	for(size_t i = 0; i < len; i++)
 	{
-		margin += zpr::sprint("%02x ", instr.bytes()[i]);
+		margin += zpr::sprint("%02x ", bytes[i]);
 		col += 3;
 	}
 
@@ -283,10 +283,10 @@ constexpr uint8_t test_bytes[] = {
 	0x48, 0xa1, 0x55, 0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55, 0xaa
 };
 
-constexpr instrad::x64::Instruction test_fixed()
+constexpr instrad::x86::Instruction test_fixed()
 {
 	auto buf = instrad::Buffer(test_bytes, sizeof(test_bytes));
-	return instrad::x64::read(buf, instrad::x64::ExecMode::Compat);
+	return instrad::x86::read(buf, instrad::x86::ExecMode::Compat);
 }
 
 
@@ -318,31 +318,20 @@ int main(int argc, char** argv)
 	file.read((char*) &bytes[0], length);
 
 	if constexpr (true)
+		memcpy(bytes, test_bytes, sizeof(test_bytes));
+
+	uint64_t ip = 0;
+	auto buf = instrad::Buffer(bytes, length);
+
+	while((ssize_t) buf.remaining() > 0)
 	{
-		uint64_t ip = 0;
-		auto buf = instrad::Buffer(test_bytes, sizeof(test_bytes));
+		auto pos = buf.position();
+		auto instr = instrad::x86::read(buf, instrad::x86::ExecMode::Long);
+		auto len = (pos - buf.position());
 
-		while((ssize_t) buf.remaining() > 0)
-		{
-			auto instr = instrad::x64::read(buf, instrad::x64::ExecMode::Long);
-			zpr::print("%4x:  %s\n", ip, print_att(instr, ip));
-			zpr::print("%4x:  %s\n", ip, print_intel(instr, ip));
+		zpr::print("%4x:  %s\n", ip, print_intel(instr, ip, bytes, len));
 
-			ip += instr.numBytes();
-		}
-	}
-	else
-	{
-		uint64_t ip = 0;
-		auto buf = instrad::Buffer(bytes, length);
-
-		while((ssize_t) buf.remaining() > 0)
-		{
-			auto instr = instrad::x64::read(buf, instrad::x64::ExecMode::Long);
-			zpr::print("%4x:  %s\n", ip, print_intel(instr, ip));
-
-			ip += instr.numBytes();
-		}
+		ip += len;
 	}
 
 	delete[] bytes;
@@ -355,9 +344,9 @@ int main(int argc, char** argv)
 
 
 #if 0
-std::string print_gnu(const instrad::x64::Instruction& instr)
+std::string print_gnu(const instrad::x86::Instruction& instr)
 {
-	auto print_operand = [](const instrad::x64::Operand& op) -> std::string {
+	auto print_operand = [](const instrad::x86::Operand& op) -> std::string {
 		if(op.isRegister())
 		{
 			return zpr::sprint("%%%s", op.reg().name());
